@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Albion Market Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="title-bar">
+    <div class="title-bar-left">
+      <span class="app-title">Albion Market Tracker</span>
+    </div>
+    <div class="title-bar-right">
+      <button class="theme-toggle" id="themeToggle" title="Переключить тему">
+        <span class="theme-icon">🌙</span>
+      </button>
+      <button class="window-btn minimize" id="minimizeBtn" title="Свернуть">─</button>
+      <button class="window-btn maximize" id="maximizeBtn" title="Развернуть">□</button>
+      <button class="window-btn close" id="closeBtn" title="Закрыть">✕</button>
+    </div>
+  </div>
+
+  <div class="control-panel">
+    <div class="control-left">
+      <button class="backend-btn" id="backendToggle">
+        <span class="btn-icon">▶</span>
+        <span class="btn-text">Запустить сбор данных</span>
+      </button>
+    </div>
+    <div class="control-right">
+      <div class="status-indicators">
+        <div class="indicator" id="captureIndicator">
+          <span class="indicator-dot"></span>
+          <span class="indicator-label">Сбор данных</span>
+        </div>
+        <div class="indicator" id="encryptionIndicator">
+          <span class="indicator-dot"></span>
+          <span class="indicator-label">Шифрование</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="table-wrapper">
+      <table id="marketTable">
+        <thead>
+          <tr>
+            <th rowspan="2" class="sticky-col-1">Название предмета</th>
+            <th rowspan="2" class="sticky-col-2">Качество</th>
+            <th rowspan="2">Black Market</th>
+            <th colspan="2" class="city-caerleon">Caerleon</th>
+            <th colspan="2" class="city-bridgewatch">Bridgewatch</th>
+            <th colspan="2" class="city-lymhurst">Lymhurst</th>
+            <th colspan="2" class="city-fortsterling">Fort Sterling</th>
+            <th colspan="2" class="city-thetford">Thetford</th>
+            <th colspan="2" class="city-martlock">Martlock</th>
+            <th colspan="2" class="city-brecilien">Brecilien</th>
+          </tr>
+          <tr>
+            <th class="city-caerleon">Заказ на продажу</th>
+            <th class="city-caerleon">Заказ на покупку</th>
+            <th class="city-bridgewatch">Заказ на продажу</th>
+            <th class="city-bridgewatch">Заказ на покупку</th>
+            <th class="city-lymhurst">Заказ на продажу</th>
+            <th class="city-lymhurst">Заказ на покупку</th>
+            <th class="city-fortsterling">Заказ на продажу</th>
+            <th class="city-fortsterling">Заказ на покупку</th>
+            <th class="city-thetford">Заказ на продажу</th>
+            <th class="city-thetford">Заказ на покупку</th>
+            <th class="city-martlock">Заказ на продажу</th>
+            <th class="city-martlock">Заказ на покупку</th>
+            <th class="city-brecilien">Заказ на продажу</th>
+            <th class="city-brecilien">Заказ на покупку</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <script src="renderer.js"></script>
+</body>
+</html>
