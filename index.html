@@ -43,6 +43,25 @@
   </div>
 
   <div class="container">
+    <!-- Панель фильтров -->
+    <div class="filter-panel">
+      <div class="filter-group">
+        <label for="searchInput">Поиск предмета</label>
+        <input type="text" id="searchInput" placeholder="Например: T8_BAG" autocomplete="off">
+      </div>
+      <div class="filter-group">
+        <label for="qualitySelect">Качество</label>
+        <select id="qualitySelect">
+          <option value="all">Все качества</option>
+          <option value="1">Обычное (1)</option>
+          <option value="2">Хорошее (2)</option>
+          <option value="3">Выдающееся (3)</option>
+          <option value="4">Отличное (4)</option>
+          <option value="5">Шедевр (5)</option>
+        </select>
+      </div>
+    </div>
+
     <div class="table-wrapper">
       <table id="marketTable">
         <thead>

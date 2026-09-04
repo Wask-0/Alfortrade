@@ -26,7 +26,6 @@ for (const [key, value] of Object.entries(rawMarketState)) {
     marketState[key] = value;
   }
 }
-// Сохраняем миграцию
 localStorage.setItem('albionMarketState', JSON.stringify(marketState));
 
 // Словарь локаций
@@ -39,6 +38,10 @@ const locationMap = {
   "Fort Sterling": "fortSterling", "Thetford": "thetford",
   "Martlock": "martlock", "Brecilien": "brecilien"
 };
+
+// Переменные для фильтрации
+let searchQuery = '';
+let selectedQuality = 'all';
 
 function parseTime(timeStr) {
   if (!timeStr) return 0;
@@ -76,13 +79,12 @@ function processMarketData(data) {
     return;
   }
 
-  // КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: Уникальный ключ теперь включает качество
   const uniqueKey = `${itemId}_${quality}`;
 
   if (!marketState[uniqueKey]) {
     marketState[uniqueKey] = {
       name: itemId,
-      quality: quality, // Сохраняем качество в объекте
+      quality: quality,
       blackMarket: { sell: null, buy: null, sellUpdated: null, buyUpdated: null },
       caerleon: { sell: null, buy: null, sellUpdated: null, buyUpdated: null },
       bridgewatch: { sell: null, buy: null, sellUpdated: null, buyUpdated: null },
@@ -126,7 +128,16 @@ function renderTable() {
   const tbody = document.getElementById('tableBody');
   tbody.innerHTML = '';
 
-  const sortedItems = Object.values(marketState).sort((a, b) => {
+  const allItems = Object.values(marketState);
+  
+  // Фильтрация по названию и качеству
+  const filteredItems = allItems.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery);
+    const matchesQuality = selectedQuality === 'all' || item.quality.toString() === selectedQuality;
+    return matchesSearch && matchesQuality;
+  });
+
+  const sortedItems = filteredItems.sort((a, b) => {
     if (a.name === b.name) {
       return b.quality - a.quality;
     }
@@ -138,19 +149,19 @@ function renderTable() {
     const qualityName = getQualityName(item.quality);
     
     const formatCell = (cityData) => {
-    if (cityData.sell === null && cityData.buy === null) {
+      if (cityData.sell === null && cityData.buy === null) {
         return `<td class="no-data" colspan="2">Нет данных</td>`;
-    }
-    
-    const sellHtml = cityData.sell !== null 
+      }
+      
+      const sellHtml = cityData.sell !== null 
         ? `<div class="price-value">${formatPrice(cityData.sell)}</div><div class="price-date">(${cityData.sellUpdated || '-'})</div>` 
         : `<span class="no-data">-</span>`;
         
-    const buyHtml = cityData.buy !== null 
+      const buyHtml = cityData.buy !== null 
         ? `<div class="price-value">${formatPrice(cityData.buy)}</div><div class="price-date">(${cityData.buyUpdated || '-'})</div>` 
         : `<span class="no-data">-</span>`;
         
-    return `<td>${sellHtml}</td><td>${buyHtml}</td>`;
+      return `<td>${sellHtml}</td><td>${buyHtml}</td>`;
     };
 
     const bmData = item.blackMarket;
@@ -268,5 +279,24 @@ document.addEventListener('DOMContentLoaded', () => {
   initThemeToggle();
   initWindowControls();
   initBackendControls();
+  
+  // Инициализация фильтров
+  const searchInput = document.getElementById('searchInput');
+  const qualitySelect = document.getElementById('qualitySelect');
+
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value.trim().toLowerCase();
+      renderTable();
+    });
+  }
+
+  if (qualitySelect) {
+    qualitySelect.addEventListener('change', (e) => {
+      selectedQuality = e.target.value;
+      renderTable();
+    });
+  }
+
   renderTable();
 });
