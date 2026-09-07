@@ -2,6 +2,8 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const http = require('http');
 const path = require('path');
 const { spawn } = require('child_process');
+const fs = require('fs');
+
 
 let mainWindow;
 let backendProcess = null;
@@ -73,7 +75,23 @@ function createWindow() {
     }
   });
 
+  // Загружаем словарь предметов
+  let itemsDictionary = {};
+  try {
+    const dictPath = path.join(__dirname, 'items-dictionary.json');
+    const rawData = fs.readFileSync(dictPath, 'utf-8');
+    itemsDictionary = JSON.parse(rawData);
+    console.log(`[Main] Словарь предметов загружен: ${Object.keys(itemsDictionary).length} записей`);
+  } catch (e) {
+    console.warn('[Main] Не удалось загрузить items-dictionary.json:', e.message);
+  }
+
   mainWindow.loadFile('index.html');
+
+  // Отправляем словарь в рендерер после загрузки страницы
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.send('dictionary-loaded', itemsDictionary);
+  });
 }
 
 app.whenReady().then(createWindow);

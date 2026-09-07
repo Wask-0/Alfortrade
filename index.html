@@ -21,6 +21,12 @@
     </div>
   </div>
 
+  <div class="navigation-bar">
+    <button class="nav-btn active" data-page="market">Рынок</button>
+    <button class="nav-btn" data-page="flipping">Флиппинг</button>
+  </div>
+
+
   <div class="control-panel">
     <div class="control-left">
       <button class="backend-btn" id="backendToggle">
@@ -42,63 +48,201 @@
     </div>
   </div>
 
-  <div class="container">
-    <!-- Панель фильтров -->
-    <div class="filter-panel">
-      <div class="filter-group">
-        <label for="searchInput">Поиск предмета</label>
-        <input type="text" id="searchInput" placeholder="Например: T8_BAG" autocomplete="off">
+  <div id="page-market" class="page active">
+    <div class="container">
+      <!-- Панель фильтров -->
+      <div class="filter-panel">
+        <div class="filter-group">
+          <label for="searchInput">Поиск предмета</label>
+          <input type="text" id="searchInput" placeholder="Например: T8_BAG" autocomplete="off">
+        </div>
+        <div class="filter-group">
+          <label for="qualitySelect">Качество</label>
+          <select id="qualitySelect">
+            <option value="all">Все качества</option>
+            <option value="1">Обычное</option>
+            <option value="2">Хорошее</option>
+            <option value="3">Выдающееся</option>
+            <option value="4">Отличное</option>
+            <option value="5">Шедевр</option>
+          </select>
+        </div>
       </div>
-      <div class="filter-group">
-        <label for="qualitySelect">Качество</label>
-        <select id="qualitySelect">
-          <option value="all">Все качества</option>
-          <option value="1">Обычное (1)</option>
-          <option value="2">Хорошее (2)</option>
-          <option value="3">Выдающееся (3)</option>
-          <option value="4">Отличное (4)</option>
-          <option value="5">Шедевр (5)</option>
-        </select>
-      </div>
-    </div>
 
-    <div class="table-wrapper">
-      <table id="marketTable">
-        <thead>
-          <tr>
-            <th rowspan="2" class="sticky-col-1">Название предмета</th>
-            <th rowspan="2" class="sticky-col-2">Качество</th>
-            <th rowspan="2">Black Market</th>
-            <th colspan="2" class="city-caerleon">Caerleon</th>
-            <th colspan="2" class="city-bridgewatch">Bridgewatch</th>
-            <th colspan="2" class="city-lymhurst">Lymhurst</th>
-            <th colspan="2" class="city-fortsterling">Fort Sterling</th>
-            <th colspan="2" class="city-thetford">Thetford</th>
-            <th colspan="2" class="city-martlock">Martlock</th>
-            <th colspan="2" class="city-brecilien">Brecilien</th>
-          </tr>
-          <tr>
-            <th class="city-caerleon">Заказ на продажу</th>
-            <th class="city-caerleon">Заказ на покупку</th>
-            <th class="city-bridgewatch">Заказ на продажу</th>
-            <th class="city-bridgewatch">Заказ на покупку</th>
-            <th class="city-lymhurst">Заказ на продажу</th>
-            <th class="city-lymhurst">Заказ на покупку</th>
-            <th class="city-fortsterling">Заказ на продажу</th>
-            <th class="city-fortsterling">Заказ на покупку</th>
-            <th class="city-thetford">Заказ на продажу</th>
-            <th class="city-thetford">Заказ на покупку</th>
-            <th class="city-martlock">Заказ на продажу</th>
-            <th class="city-martlock">Заказ на покупку</th>
-            <th class="city-brecilien">Заказ на продажу</th>
-            <th class="city-brecilien">Заказ на покупку</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody">
-        </tbody>
-      </table>
+      <div class="table-wrapper">
+        <table id="marketTable">
+          <thead>
+            <tr>
+              <th rowspan="2" class="sticky-col-1 sortable" id="sortByName">
+                Название предмета <span class="sort-arrow"></span>
+              </th>
+              <th rowspan="2" class="sticky-col-2">Качество</th>
+              <th colspan="2" class="black-market">Black Market</th> 
+              <th colspan="2" class="city-caerleon">Caerleon</th>
+              <th colspan="2" class="city-bridgewatch">Bridgewatch</th>
+              <th colspan="2" class="city-lymhurst">Lymhurst</th>
+              <th colspan="2" class="city-fortsterling">Fort Sterling</th>
+              <th colspan="2" class="city-thetford">Thetford</th>
+              <th colspan="2" class="city-martlock">Martlock</th>
+              <th colspan="2" class="city-brecilien">Brecilien</th>
+            </tr>
+            <tr>
+              <th class="black-market">Заказ на продажу</th>
+              <th class="black-market">Заказ на покупку</th>
+              <th class="city-caerleon">Заказ на продажу</th>
+              <th class="city-caerleon">Заказ на покупку</th>
+              <th class="city-bridgewatch">Заказ на продажу</th>
+              <th class="city-bridgewatch">Заказ на покупку</th>
+              <th class="city-lymhurst">Заказ на продажу</th>
+              <th class="city-lymhurst">Заказ на покупку</th>
+              <th class="city-fortsterling">Заказ на продажу</th>
+              <th class="city-fortsterling">Заказ на покупку</th>
+              <th class="city-thetford">Заказ на продажу</th>
+              <th class="city-thetford">Заказ на покупку</th>
+              <th class="city-martlock">Заказ на продажу</th>
+              <th class="city-martlock">Заказ на покупку</th>
+              <th class="city-brecilien">Заказ на продажу</th>
+              <th class="city-brecilien">Заказ на покупку</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
+
+  <div id="page-flipping" class="page">
+    <div class="container">
+      <!-- Панель фильтров флиппинга -->
+      <div class="filter-panel flipping-filters">
+        <!-- Город покупки -->
+        <div class="filter-group">
+          <label for="buyCitySelect">Город покупки</label>
+          <select id="buyCitySelect">
+            <option value="any">Любой город</option>
+            <option value="caerleon">Caerleon</option>
+            <option value="bridgewatch">Bridgewatch</option>
+            <option value="lymhurst">Lymhurst</option>
+            <option value="fortSterling">Fort Sterling</option>
+            <option value="thetford">Thetford</option>
+            <option value="martlock">Martlock</option>
+            <option value="brecilien">Brecilien</option>
+          </select>
+        </div>
+
+        <!-- Город продажи -->
+        <div class="filter-group">
+          <label for="sellCitySelect">Город продажи</label>
+          <select id="sellCitySelect">
+            <option value="blackMarket">Black Market</option>
+            <option value="any">Любой город</option>
+            <option value="caerleon">Caerleon</option>
+            <option value="bridgewatch">Bridgewatch</option>
+            <option value="lymhurst">Lymhurst</option>
+            <option value="fortSterling">Fort Sterling</option>
+            <option value="thetford">Thetford</option>
+            <option value="martlock">Martlock</option>
+            <option value="brecilien">Brecilien</option>
+          </select>
+        </div>
+
+        <!-- Процент прибыли -->
+        <div class="filter-group">
+          <label for="profitPercentInput">Желаемая прибыль (%)</label>
+          <input type="number" id="profitPercentInput" placeholder="Например: 20" min="0" step="0.1">
+        </div>
+
+        <!-- Наличие премиума (Радио-кнопки) -->
+        <div class="filter-group">
+          <label>Наличие премиума</label>
+          <div class="premium-toggle">
+            <button class="premium-btn active" data-value="true">Да</button>
+            <button class="premium-btn" data-value="false">Нет</button>
+          </div>
+        </div>
+
+        <!-- Скорость реализации -->
+        <div class="filter-group">
+          <label for="speedSelect">Скорость реализации</label>
+          <select id="speedSelect">
+            <option value="1">1 (меньше часа)</option>
+            <option value="2">2 (меньше 6 часов)</option>
+            <option value="3">3 (меньше 12 часов)</option>
+            <option value="4">4 (меньше суток)</option>
+            <option value="5">5 (больше суток)</option>
+          </select>
+        </div>
+
+        <!-- Уровень предмета (Множественный выбор) -->
+        <div class="filter-group multi-select-group">
+          <label>Уровень предмета</label>
+          <div class="custom-multi-select" id="tierSelect">
+            <div class="multi-select-header">Выберите уровни...</div>
+            <div class="multi-select-options">
+              <label><input type="checkbox" value="2"> T2</label>
+              <label><input type="checkbox" value="3"> T3</label>
+              <label><input type="checkbox" value="4"> T4</label>
+              <label><input type="checkbox" value="5"> T5</label>
+              <label><input type="checkbox" value="6"> T6</label>
+              <label><input type="checkbox" value="7"> T7</label>
+              <label><input type="checkbox" value="8"> T8</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Уровень зачарования (Множественный выбор) -->
+        <div class="filter-group multi-select-group">
+          <label>Уровень зачарования</label>
+          <div class="custom-multi-select" id="enchantSelect">
+            <div class="multi-select-header">Выберите зачарование...</div>
+            <div class="multi-select-options">
+              <label><input type="checkbox" value="0"> 0</label>
+              <label><input type="checkbox" value="1"> 1</label>
+              <label><input type="checkbox" value="2"> 2</label>
+              <label><input type="checkbox" value="3"> 3</label>
+              <label><input type="checkbox" value="4"> 4</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Способ покупки -->
+        <div class="filter-group">
+          <label>Способ покупки</label>
+          <div class="trade-toggle" id="buyMethodToggle">
+            <button class="trade-btn active" data-value="instant">Быстрая покупка</button>
+            <button class="trade-btn" data-value="order">Заказ на покупку</button>
+          </div>
+        </div>
+
+        <!-- Способ продажи -->
+        <div class="filter-group">
+          <label>Способ продажи</label>
+          <div class="trade-toggle" id="sellMethodToggle">
+            <button class="trade-btn active" data-value="instant">Быстрая продажа</button>
+            <button class="trade-btn" data-value="order">Заказ на продажу</button>
+          </div>
+        </div>
+
+          <!-- Зачарование -->
+        <div class="filter-group">
+          <label>Возможность зачарования</label>
+          <div class="enchant-toggle" id="enchantMethodToggle">
+            <button class="enchant-btn active" data-value="true">Учитывать</button>
+            <button class="enchant-btn" data-value="false">Не учитывать</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Заглушка для будущей таблицы результатов -->
+      <div class="table-wrapper flipping-results">
+        <p style="color: var(--text-primary); opacity: 0.5; font-size: 14px;">
+          Здесь будет список выгодных предметов для перепродажи
+        </p>
+      </div>
+    </div>
+  </div>
+
   <script src="renderer.js"></script>
 </body>
 </html>
