@@ -809,6 +809,153 @@ thead th.sticky-col-2::after {
   background-color: var(--bg-hover);
 }
 
+/* ===== ТАБЛИЦА РЕЗУЛЬТАТОВ ФЛИППИНГА ===== */
+.flipping-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.flipping-table th {
+  background-color: var(--bg-tertiary);
+  color: var(--accent-color);
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 2px solid var(--border-color);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.flipping-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.flipping-table tbody tr:hover td {
+  background-color: var(--row-hover) !important;
+}
+
+.item-cell .item-name {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.item-cell .item-meta {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-top: 2px;
+}
+
+.arrow-cell {
+  text-align: center;
+  color: var(--accent-color);
+  font-size: 18px;
+  width: 40px;
+}
+
+.sell-price {
+  font-weight: 600;
+  color: var(--price-buy);
+}
+
+.sell-commission {
+  font-size: 11px;
+  opacity: 0.5;
+  margin-top: 2px;
+}
+
+.profit-col {
+  text-align: right;
+  border-left: 2px solid var(--border-color);
+}
+
+.profit-cell {
+  text-align: right;
+}
+
+.profit-percent {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--price-buy);
+}
+
+.clean-profit {
+  font-size: 11px;
+  opacity: 0.7;
+  margin-top: 2px;
+}
+
+/* ===== СТИЛИ ДЛЯ ИНФОРМАЦИИ О ПОКУПКЕ ===== */
+.buy-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.city-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.buy-price {
+  font-size: 12px;
+  color: var(--price-sell); /* Красный цвет для цены покупки */
+  font-weight: 500;
+}
+
+.buy-commission {
+  font-size: 11px;
+  opacity: 0.6;
+  color: var(--text-primary);
+}
+
+/* ===== ИСПРАВЛЕНИЕ СКРОЛЛА ДЛЯ РЕЗУЛЬТАТОВ ФЛИППИНГА ===== */
+#page-flipping .flipping-results {
+  flex: 1;           /* Занимает всё оставшееся место под фильтрами */
+  min-height: 0;     /* КРИТИЧЕСКИ ВАЖНО! Без этого flex-элемент не может сжиматься и скроллиться внутри себя */
+  overflow-y: auto;  /* Вертикальный скролл ТОЛЬКО здесь */
+  overflow-x: hidden;
+  
+  /* Принудительно убираем стили заглушки, если они остались в HTML или других стилях */
+  display: block !important; 
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+}
+
+/* Убираем лишние отступы у самой таблицы, чтобы она начиналась ровно от края контейнера */
+.flipping-table {
+  margin-top: 0;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+/* ===== СОРТИРОВКА В ТАБЛИЦЕ ФЛИППИНГА ===== */
+.sortable-flip {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s;
+}
+
+.sortable-flip:hover {
+  background-color: var(--bg-hover) !important;
+  color: var(--text-secondary);
+}
+
+/* Используем те же правила для стрелок, что и на странице рынка */
+.sortable-flip.active .sort-arrow {
+  opacity: 1;
+  color: var(--accent-color);
+}
+
+.sortable-flip.asc .sort-arrow::after { content: '▲'; }
+.sortable-flip.desc .sort-arrow::after { content: '▼'; }
+.sortable-flip:not(.asc):not(.desc) .sort-arrow::after { content: '⇅'; }
+
 /* ===== АДАПТИВНОСТЬ ===== */
 @media (max-width: 1200px) {
   table { font-size: 12px; }

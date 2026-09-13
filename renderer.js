@@ -10,7 +10,7 @@ const qualityMap = {
 };
 
 function getQualityName(q) {
-  return qualityMap[q] || `Q${q}`;
+  return qualityMap[q] || 'Неизвестно'; // Или просто '', или 'N/A'
 }
 
 // Загрузка и миграция сохранённых данных при старте
@@ -27,6 +27,12 @@ for (const [key, value] of Object.entries(rawMarketState)) {
   }
 }
 localStorage.setItem('albionMarketState', JSON.stringify(marketState));
+
+for (const key of Object.keys(marketState)) {
+  if (!marketState[key].id) {
+    marketState[key].id = key.split('_')[0];
+  }
+}
 
 // Словарь локаций
 const locationMap = {
@@ -48,6 +54,9 @@ let flipProfitPercent = 0;
 
 let sortField = 'name'; // 'name' или 'quality'
 let sortDirection = 'asc'; // 'asc' или 'desc'
+
+let flipSortField = 'profitPercent'; // 'profitPercent' или 'cleanProfit'
+let flipSortDirection = 'desc';      // 'desc' или 'asc'
 
 let itemsDict = {};
 
@@ -89,9 +98,14 @@ function processMarketData(data) {
 
   const uniqueKey = `${itemId}_${quality}`;
 
+  const dictItem = itemsDict[itemId] || {};
+
   if (!marketState[uniqueKey]) {
     marketState[uniqueKey] = {
-      name: getDisplayName(itemId),
+      id: itemId, // Сохраняем ПОЛНЫЙ технический ID (T4_2H_BOW)
+      name: dictItem.name || itemId,
+      tier: dictItem.tier || extractTier(itemId),
+      enchant: dictItem.enchant !== undefined ? dictItem.enchant : 0,
       quality: quality,
       blackMarket: { sell: null, buy: null, sellUpdated: null, buyUpdated: null },
       caerleon: { sell: null, buy: null, sellUpdated: null, buyUpdated: null },
@@ -193,6 +207,253 @@ function renderTable() {
     `;
     tbody.appendChild(row);
   });
+}
+
+// Глобальные переменные состояния флиппинга (убедись, что они объявлены)
+let hasPremium = true;
+let buyMethod = 'instant'; // 'instant' или 'order'
+let sellMethod = 'instant'; // 'instant' или 'order'
+
+function calculateFlippingOpportunities() {
+  const results = [];
+  const taxRate = hasPremium ? 0.04 : 0.08;
+  const orderFee = 0.025;
+
+  // Получаем текущие значения фильтров из мультиселектов
+  const selectedTiers = Array.from(document.querySelectorAll('#tierSelect input:checked')).map(cb => parseInt(cb.value));
+  const selectedEnchants = Array.from(document.querySelectorAll('#enchantSelect input:checked')).map(cb => parseInt(cb.value));
+  
+  // Если ничего не выбрано, считаем что выбраны ВСЕ (чтобы фильтр не блокировал вывод)
+  const filterByTier = selectedTiers.length > 0;
+  const filterByEnchant = selectedEnchants.length > 0;
+
+
+  // Список городов для поиска минимальной цены покупки
+  const allRoyalCities = ['caerleon', 'bridgewatch', 'lymhurst', 'fortSterling', 'thetford', 'martlock', 'brecilien'];
+  
+  // Перебираем все предметы из таблицы рынка
+  Object.values(marketState).forEach(item => {
+        // 1. Определяем цену ПОКУПКИ
+    let buyPrice = null;
+    let buyCityName = '';
+
+    
+    const itemTier = item.tier || 0;
+    const itemEnchant = item.enchant || 0;
+
+    // === ФИЛЬТРАЦИЯ ПО ТИРУ И ЗАЧАРОВАНИЮ ===
+    if (filterByTier && !selectedTiers.includes(itemTier)) return;
+    if (filterByEnchant && !selectedEnchants.includes(itemEnchant)) return;
+
+    if (flipBuyCity === 'any') {
+      // Ищем минимальную цену среди королевских городов
+      let minPrice = Infinity;
+      let bestCity = '';
+      
+      allRoyalCities.forEach(city => {
+        const cityData = item[city];
+        if (!cityData) return;
+
+        // ВАЖНО: Выбираем поле в зависимости от способа покупки!
+        const priceToCheck = buyMethod === 'order' ? cityData.buy : cityData.sell;
+        
+        if (priceToCheck !== null && priceToCheck < minPrice) {
+          minPrice = priceToCheck;
+          bestCity = city;
+        }
+      });
+      
+      if (minPrice !== Infinity) {
+        buyPrice = minPrice;
+        buyCityName = getCityDisplayName(bestCity);
+      }
+    } else {
+      // Конкретный город покупки
+      const cityData = item[flipBuyCity];
+      if (cityData) {
+        // ВАЖНО: Выбираем поле в зависимости от способа покупки!
+        buyPrice = buyMethod === 'order' ? cityData.buy : cityData.sell;
+        buyCityName = getCityDisplayName(flipBuyCity);
+      }
+    }
+
+    // Если не нашли цену покупки — пропускаем предмет
+    if (!buyPrice) return;
+
+    // Корректируем цену покупки (комиссия за выставление ордера)
+    let actualBuyCost = buyPrice;
+    let buyCommission = 0;
+
+    if (buyMethod === 'order') {
+      // Заказ на покупку: цена request + 2.5% комиссии
+      buyCommission = buyPrice * orderFee;
+      actualBuyCost = buyPrice + buyCommission;
+    } else {
+      // Быстрая покупка: цена offer, комиссия 0
+      buyCommission = 0;
+      actualBuyCost = buyPrice;
+    }
+
+        // 2. Определяем цену ПРОДАЖИ
+    let sellPrice = null;
+    let sellCityName = '';
+
+    if (flipSellCity === 'any') {
+      // Ищем максимальную цену среди всех городов + Black Market
+      let maxPrice = -Infinity;
+      let bestCity = '';
+      
+      [...allRoyalCities, 'blackMarket'].forEach(city => {
+        const cityData = item[city];
+        if (!cityData) return;
+
+        // ВАЖНО: Выбираем поле в зависимости от способа продажи!
+        const priceToCheck = sellMethod === 'order' ? cityData.sell : cityData.buy;
+        
+        if (priceToCheck !== null && priceToCheck > maxPrice) {
+          maxPrice = priceToCheck;
+          bestCity = city;
+        }
+      });
+      
+      if (maxPrice !== -Infinity) {
+        sellPrice = maxPrice;
+        sellCityName = getCityDisplayName(bestCity);
+      }
+    } else {
+      // Конкретный город продажи
+      const cityData = item[flipSellCity];
+      if (cityData) {
+        // ВАЖНО: Выбираем поле в зависимости от способа продажи!
+        sellPrice = sellMethod === 'order' ? cityData.sell : cityData.buy;
+        sellCityName = getCityDisplayName(flipSellCity);
+      }
+    }
+
+    // Если не нашли цену продажи — пропускаем предмет
+    if (!sellPrice) return;
+
+    // Корректируем цену продажи
+    let grossSellRevenue = sellPrice;
+    if (sellMethod === 'order') {
+      // Заказ на продажу: цена offer - 2.5% комиссии
+      grossSellRevenue = sellPrice * (1 - orderFee);
+    }
+    // При быстрой продаже берется цена buy без дополнительной комиссии за ордер
+    const netSellRevenue = grossSellRevenue * (1 - taxRate); 
+
+    // 3. Расчет прибыли
+    const profit = netSellRevenue - actualBuyCost;
+    const profitPercent = (profit / actualBuyCost) * 100;
+
+    // 4. Фильтрация по желаемой прибыли
+    if (profitPercent >= flipProfitPercent && profit > 0) {
+      results.push({
+        itemName: item.name, // Берем готовое красивое имя
+        tier: itemTier,
+        enchant: itemEnchant,
+        quality: item.quality,
+        buyCity: buyCityName,
+        buyPriceDisplay: formatPrice(actualBuyCost), // Цена покупки с учетом комиссии
+        buyCommissionDisplay: buyCommission > 0 ? `+${formatPrice(buyCommission)}` : '-', // Комиссия
+        sellCity: sellCityName,
+        netSellPrice: Math.round(netSellRevenue),
+        commissionDeducted: Math.round(grossSellRevenue - netSellRevenue),
+        profitPercent: profitPercent.toFixed(1),
+        cleanProfit: Math.round(profit)
+      });
+    }
+  });
+
+  // Сортируем по проценту прибыли (по убыванию)
+  results.sort((a, b) => {
+    let valA, valB;
+    
+    if (flipSortField === 'profitPercent') {
+      valA = parseFloat(a.profitPercent);
+      valB = parseFloat(b.profitPercent);
+    } else {
+      valA = a.cleanProfit;
+      valB = b.cleanProfit;
+    }
+
+    return flipSortDirection === 'asc' ? valA - valB : valB - valA;
+  });
+
+  renderFlippingResults(results);
+}
+
+// Вспомогательная функция для красивых названий городов
+function getCityDisplayName(cityKey) {
+  const names = {
+    caerleon: 'Caerleon', bridgewatch: 'Bridgewatch', lymhurst: 'Lymhurst',
+    fortSterling: 'Fort Sterling', thetford: 'Thetford', martlock: 'Martlock',
+    brecilien: 'Brecilien', blackMarket: 'Black Market'
+  };
+  return names[cityKey] || cityKey;
+}
+
+// Извлечение тира из ID предмета (если нет в словаре)
+function extractTier(itemId) {
+  const match = itemId.match(/^T(\d+)/);
+  return match ? parseInt(match[1]) : 0;
+}
+
+function renderFlippingResults(results) {
+  const wrapper = document.querySelector('#page-flipping .flipping-results');
+  if (!wrapper) return;
+
+  if (results.length === 0) {
+    wrapper.innerHTML = `
+      <p style="color: var(--text-primary); opacity: 0.5; font-size: 14px;">
+        Нет сделок с прибылью ≥ ${flipProfitPercent}%
+      </p>`;
+    return;
+  }
+
+  let html = `
+    <table class="flipping-table">
+      <thead>
+        <tr>
+          <th>Предмет</th>
+          <th>Покупка</th>
+          <th></th>
+          <th>Продажа</th>
+          <th class="profit-col sortable-flip" id="flipSortHeader">
+            <span class="sort-label">Прибыль (%)</span> <span class="sort-arrow"></span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  results.forEach(r => {
+    html += `
+      <tr>
+        <td class="item-cell">
+          <div class="item-name">${r.itemName}</div>
+          <div class="item-meta">T${r.tier} | +${r.enchant} | ${getQualityName(r.quality)}</div>
+        </td>
+        <td class="city-cell buy-info">
+          <div class="city-name">${r.buyCity}</div>
+          <div class="buy-price">${r.buyPriceDisplay}</div>
+          <div class="buy-commission">${r.buyCommissionDisplay}</div>
+        </td>
+        <td class="arrow-cell">➜</td>
+        <td class="sell-cell">
+          <div class="sell-city">${r.sellCity}</div>
+          <div class="sell-price">${formatPrice(r.netSellPrice)}</div>
+          <div class="sell-commission">-${formatPrice(r.commissionDeducted)}</div>
+        </td>
+        <td class="profit-cell">
+          <div class="profit-percent">${r.profitPercent}%</div>
+          <div class="clean-profit">+${formatPrice(r.cleanProfit)}</div>
+        </td>
+      </tr>`;
+  });
+
+  html += '</tbody></table>';
+  wrapper.innerHTML = html;
+ 
 }
 
 ipcRenderer.on('market-data-received', (event, data) => {
@@ -327,6 +588,23 @@ function initSorting() {
   }
 }
 
+function updateFlipSortUI() {
+  const header = document.getElementById('flipSortHeader');
+  if (!header) return;
+  
+  // Всегда показываем стрелку вниз, так как сортировка всегда desc
+  header.classList.remove('asc');
+  header.classList.add('desc');
+  
+  // Опционально: меняем текст заголовка для ясности
+  const arrowSpan = header.querySelector('.sort-arrow');
+  if (flipSortField === 'profitPercent') {
+    header.childNodes[0].textContent = 'Прибыль (%) ';
+  } else {
+    header.childNodes[0].textContent = 'Чистая прибыль ';
+  }
+}
+
 function updateSortUI() {
   const nameHeader = document.getElementById('sortByName');
   
@@ -341,8 +619,36 @@ ipcRenderer.on('dictionary-loaded', (event, dictionary) => {
   itemsDict = dictionary;
   console.log(`[Renderer] Словарь получен: ${Object.keys(itemsDict).length} записей`);
   
-  // Перерисовываем таблицу с новыми названиями
+  let updatedCount = 0;
+  
+  // Перебираем ВСЕ записи в marketState по их КЛЮЧАМ
+  for (const [key, item] of Object.entries(marketState)) {
+    // Ключ в LS имеет формат "TECHNICAL_ID_QUALITY" (например, T4_2H_BOW_1)
+    // Убираем последнее _число, чтобы получить чистый технический ID
+    const parts = key.split('_');
+    const qualitySuffix = parts.pop(); // Удаляем качество (1, 2, 3...)
+    const fullTechId = parts.join('_'); // Собираем обратно: T4_2H_BOW
+    
+    const dictItem = itemsDict[fullTechId];
+    
+    if (dictItem) {
+      // Принудительно обновляем данные из словаря
+      item.id = fullTechId; // Исправляем сломанный ID
+      item.name = dictItem.name || item.name;
+      item.tier = dictItem.tier;
+      item.enchant = dictItem.enchant !== undefined ? dictItem.enchant : 0;
+      
+      updatedCount++;
+    }
+  }
+  
+  if (updatedCount > 0) {
+    console.log(`[Fix] Восстановлено и обновлено ${updatedCount} предметов`);
+    localStorage.setItem('albionMarketState', JSON.stringify(marketState));
+  }
+  
   renderTable();
+  calculateFlippingOpportunities();
 });
 
 // Функция получения отображаемого имени
@@ -358,8 +664,11 @@ document.addEventListener('DOMContentLoaded', () => {
   initThemeToggle();
   initWindowControls();
   initBackendControls();
-  
-  // Инициализация фильтров
+  initNavigation();
+  initSorting();
+  updateSortUI(); 
+
+  // --- Инициализация фильтров РЫНКА ---
   const searchInput = document.getElementById('searchInput');
   const qualitySelect = document.getElementById('qualitySelect');
 
@@ -377,65 +686,49 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-    const buyCitySelect = document.getElementById('buyCitySelect');
+  // --- Инициализация фильтров ФЛИППИНГА ---
+  
+  // 1. Города и процент прибыли
+  const buyCitySelect = document.getElementById('buyCitySelect');
   const sellCitySelect = document.getElementById('sellCitySelect');
   const profitInput = document.getElementById('profitPercentInput');
 
-  if (buyCitySelect) {
-    buyCitySelect.addEventListener('change', (e) => {
-      flipBuyCity = e.target.value;
-      // TODO: Здесь будет запуск расчета флиппинга
-      console.log('Город покупки:', flipBuyCity);
-    });
-  }
+  if (buyCitySelect) buyCitySelect.addEventListener('change', (e) => {
+    flipBuyCity = e.target.value;
+    calculateFlippingOpportunities();
+  });
 
-  if (sellCitySelect) {
-    sellCitySelect.addEventListener('change', (e) => {
-      flipSellCity = e.target.value;
-      // TODO: Здесь будет запуск расчета флиппинга
-      console.log('Город продажи:', flipSellCity);
-    });
-  }
+  if (sellCitySelect) sellCitySelect.addEventListener('change', (e) => {
+    flipSellCity = e.target.value;
+    calculateFlippingOpportunities();
+  });
 
-  if (profitInput) {
-    profitInput.addEventListener('input', (e) => {
-      flipProfitPercent = parseFloat(e.target.value) || 0;
-      // TODO: Здесь будет запуск расчета флиппинга
-      console.log('Процент прибыли:', flipProfitPercent);
-    });
-  }
+  if (profitInput) profitInput.addEventListener('input', (e) => {
+    flipProfitPercent = parseFloat(e.target.value) || 0;
+    calculateFlippingOpportunities();
+  });
 
-  initSorting();
-  updateSortUI(); 
-
-  initNavigation();
-
-  renderTable();
-
-    // --- Логика переключателя Премиума ---
+  // 2. Переключатель Премиума (используем ГЛОБАЛЬНУЮ переменную)
   const premiumBtns = document.querySelectorAll('.premium-btn');
-  let hasPremium = true; // По умолчанию "Да"
-
   premiumBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       premiumBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      hasPremium = btn.dataset.value === 'true';
-      console.log('Премиум:', hasPremium);
-      // TODO: Запуск расчета
+      hasPremium = btn.dataset.value === 'true'; // Обновляем глобальную переменную
+      calculateFlippingOpportunities();
     });
   });
 
-  // --- Логика Скорости реализации ---
+  // 3. Скорость реализации (пока заглушка, но пересчет можно добавить позже)
   const speedSelect = document.getElementById('speedSelect');
   if (speedSelect) {
     speedSelect.addEventListener('change', (e) => {
       console.log('Скорость реализации:', e.target.value);
-      // TODO: Запуск расчета
+      // calculateFlippingOpportunities(); // Раскомментируй, когда добавишь логику скорости
     });
   }
 
-  // --- Логика Мультиселектов (Уровень и Зачарование) ---
+  // 4. Мультиселекты (Тир и Зачарование)
   function initMultiSelect(selectId, headerText) {
     const container = document.getElementById(selectId);
     if (!container) return;
@@ -444,17 +737,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const options = container.querySelector('.multi-select-options');
     const checkboxes = container.querySelectorAll('input[type="checkbox"]');
 
-    // Открытие/закрытие списка
     header.addEventListener('click', (e) => {
       e.stopPropagation();
-      // Закрываем другие открытые списки
       document.querySelectorAll('.multi-select-options').forEach(opt => {
         if (opt !== options) opt.classList.remove('open');
       });
       options.classList.toggle('open');
     });
 
-    // Обновление текста заголовка при выборе
     const updateHeader = () => {
       const checked = Array.from(checkboxes).filter(cb => cb.checked);
       if (checked.length === 0) {
@@ -469,30 +759,23 @@ document.addEventListener('DOMContentLoaded', () => {
     checkboxes.forEach(cb => {
       cb.addEventListener('change', () => {
         updateHeader();
-        // Собираем значения
-        const values = Array.from(checkboxes)
-          .filter(c => c.checked)
-          .map(c => parseInt(c.value));
-        console.log(`${selectId}:`, values);
-        // TODO: Запуск расчета
+        // При изменении любого чекбокса пересчитываем таблицу флиппинга
+        calculateFlippingOpportunities(); 
       });
     });
 
-    // Закрытие при клике вне списка
     document.addEventListener('click', (e) => {
-      if (!container.contains(e.target)) {
-        options.classList.remove('open');
-      }
+      if (!container.contains(e.target)) options.classList.remove('open');
     });
   }
 
   initMultiSelect('tierSelect', 'Выберите уровни...');
   initMultiSelect('enchantSelect', 'Выберите зачарование...');
 
-    // --- Логика способов покупки и продажи ---
+  // 5. Способы покупки и продажи (вынесены отдельно!)
   function initTradeToggle(toggleId, defaultValue, label) {
     const toggle = document.getElementById(toggleId);
-    if (!toggle) return;
+    if (!toggle) return null;
     
     const buttons = toggle.querySelectorAll('.trade-btn');
     let currentValue = defaultValue;
@@ -502,14 +785,24 @@ document.addEventListener('DOMContentLoaded', () => {
         buttons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentValue = btn.dataset.value;
-        console.log(`${label}:`, currentValue);
-        // TODO: Запуск расчета флиппинга
+        
+        // Обновляем глобальные переменные
+        if (label === 'Способ покупки') buyMethod = currentValue;
+        if (label === 'Способ продажи') sellMethod = currentValue;
+        
+        calculateFlippingOpportunities();
       });
     });
 
-      // --- Логика переключателя Зачарования ---
+    return () => currentValue;
+  }
+
+  const getBuyMethod = initTradeToggle('buyMethodToggle', 'instant', 'Способ покупки');
+  const getSellMethod = initTradeToggle('sellMethodToggle', 'instant', 'Способ продажи');
+
+  // 6. Переключатель Зачарования
   const enchantBtns = document.querySelectorAll('.enchant-btn');
-  let shouldEnchant = true; // По умолчанию "Зачаровывать"
+  let shouldEnchant = true; 
 
   enchantBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -517,13 +810,24 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.classList.add('active');
       shouldEnchant = btn.dataset.value === 'true';
       console.log('Зачарование:', shouldEnchant ? 'Включено' : 'Выключено');
-      // TODO: Запуск расчета флиппинга
+      // Пока не влияет на расчет, но можно добавить позже
     });
   });
 
-    return () => currentValue; // Возвращаем функцию-геттер
-  }
+  document.addEventListener('click', (e) => {
+    const sortHeader = e.target.closest('#flipSortHeader');
+    if (sortHeader) {
+      // Переключаем поле сортировки
+      flipSortField = flipSortField === 'profitPercent' ? 'cleanProfit' : 'profitPercent';
+      
+      // Направление ВСЕГДА остается от большего к меньшему
+      flipSortDirection = 'desc'; 
+      
+      updateFlipSortUI();
+      calculateFlippingOpportunities();
+    }
+  });
 
-  const getBuyMethod = initTradeToggle('buyMethodToggle', 'instant', 'Способ покупки');
-  const getSellMethod = initTradeToggle('sellMethodToggle', 'instant', 'Способ продажи');
+  // Первичный расчет при загрузке страницы (чтобы таблица появилась сразу)
+  calculateFlippingOpportunities(); 
 });
