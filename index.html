@@ -236,6 +236,24 @@
             <button class="enchant-btn active" data-value="false">Не учитывать</button>
           </div>
         </div>
+
+                <!-- Настройки зачарования (встроены в общий список) -->
+        <div class="filter-group enchant-setting-row" id="row-enchant-buy-method" style="display: none;">
+            <label>Способ закупки ресурсов</label>
+            <div class="trade-toggle" id="enchantBuyMethodToggle">
+                <button class="trade-btn active" data-value="instant">Мгновенно</button>
+                <button class="trade-btn" data-value="order">Ордером</button>
+            </div>
+        </div>
+
+        <div class="filter-group enchant-setting-row" id="row-enchant-city" style="display: none;">
+            <label for="enchantResourceCity">Город закупки ресурсов</label>
+            <select id="enchantResourceCity" class="city-select">
+                <option value="target">В городе продажи предмета</option>
+                <option value="source">В городе покупки базы</option>
+                <option value="any">Самый дешевый город</option>
+            </select>
+        </div>
       </div>
 
       <!-- Заглушка для будущей таблицы результатов -->

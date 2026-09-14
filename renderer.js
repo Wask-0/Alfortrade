@@ -57,6 +57,11 @@ let sortDirection = 'asc';
 
 let flipSortField = 'profitPercent'; 
 let flipSortDirection = 'desc';      
+let useEnchantCrafting = false;
+
+// Настройки зачарования
+let enchantBuyMethod = 'instant'; // instant или order
+let enchantResourceCity = 'target'; // target, source, any
 
 let itemsDict = {};
 
@@ -83,21 +88,8 @@ function shouldUpdate(currentPrice, currentUpdated, newPrice, newUpdated, isSell
 }
 
 function processMarketData(data) {
-  // Деструктуризация, включая salesPerDay
   const { itemId, locationId, auctionType, price, quality, enchantment, timestamp, salesPerDay } = data;
 
-  // --- ВРЕМЕННЫЙ ВЫВОД ДЛЯ ОТЛАДКИ ---
-  if (salesPerDay !== undefined && salesPerDay !== null) {
-    console.log("📊 [DEBUG] Получены данные о продажах:", {
-      Item: itemId,
-      Location: locationId,
-      SalesPerDay: salesPerDay,
-      Quality: quality,
-      Enchantment: enchantment
-    });
-  }
-  // ------------------------------------
-  
   if (!itemId || !locationId) {
     console.warn("[Frontend] Отброшены данные: отсутствует itemId или locationId", data);
     return;
@@ -110,7 +102,6 @@ function processMarketData(data) {
   }
 
   const uniqueKey = `${itemId}_${quality}`;
-
   const dictItem = itemsDict[itemId] || {};
 
   if (!marketState[uniqueKey]) {
@@ -149,24 +140,18 @@ function processMarketData(data) {
     }
   }
 
-  // --- НОВАЯ ЛОГИКА: Сохраняем продажи в день ---
-  // SalesPerDay приходит как общая статистика по предмету в локации
+  // --- ЛОГИКА: Сохраняем продажи в день ---
   if (salesPerDay !== undefined && salesPerDay !== null) {
     const now = Date.now();
     const oneMinute = 60 * 1000;
     
-    // Используем отдельное поле для времени обновления продаж
     const lastSalesUpdate = city.lastSalesUpdate || 0;
     const isTimePassed = (now - lastSalesUpdate) > oneMinute;
     const isNewValueHigher = !city.salesPerDay || salesPerDay > city.salesPerDay;
 
     if (isTimePassed || isNewValueHigher) {
       city.salesPerDay = salesPerDay;
-      city.lastSalesUpdate = now; // Сохраняем текущее время в мс
-      
-      console.log(`[DEBUG] Обновлено salesPerDay=${salesPerDay} для ${itemId}_Q${quality} в ${cityKey}. Причина: ${isNewValueHigher ? 'новое макс.' : 'прошла минута'}`);
-    } else {
-      console.log(`[DEBUG] Пропущено salesPerDay=${salesPerDay} для ${itemId}_Q${quality} (защита)`);
+      city.lastSalesUpdate = now;
     }
   }
 
@@ -213,7 +198,6 @@ function renderTable() {
         return `<td class="no-data">-</td><td class="no-data">-</td>`;
       }
       
-      // Формируем HTML для продаж в день (одинаковый для обеих ячеек)
       const spdHtml = cityData.salesPerDay 
         ? `<div class="spd-value" style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;"> ${cityData.salesPerDay}/день</div>` 
         : '';
@@ -229,18 +213,17 @@ function renderTable() {
       return `<td>${sellHtml}</td><td>${buyHtml}</td>`;
     };
 
-    // При вызове передаем item.salesPerDay
     row.innerHTML = `
       <td class="sticky-col-1 item-name">${getDisplayName(item.name)}</td>
       <td class="sticky-col-2 item-quality">${qualityName}</td>
-      ${formatCell(item.blackMarket, item.salesPerDay)}
-      ${formatCell(item.caerleon, item.salesPerDay)}
-      ${formatCell(item.bridgewatch, item.salesPerDay)}
-      ${formatCell(item.lymhurst, item.salesPerDay)}
-      ${formatCell(item.fortSterling, item.salesPerDay)}
-      ${formatCell(item.thetford, item.salesPerDay)}
-      ${formatCell(item.martlock, item.salesPerDay)}
-      ${formatCell(item.brecilien, item.salesPerDay)}
+      ${formatCell(item.blackMarket)}
+      ${formatCell(item.caerleon)}
+      ${formatCell(item.bridgewatch)}
+      ${formatCell(item.lymhurst)}
+      ${formatCell(item.fortSterling)}
+      ${formatCell(item.thetford)}
+      ${formatCell(item.martlock)}
+      ${formatCell(item.brecilien)}
     `;
     tbody.appendChild(row);
   });
@@ -261,20 +244,18 @@ function getFallbackBuyPrice(item, cityKey) {
   const cityData = item[cityKey];
   if (!cityData) return null;
 
-  // Если у текущего качества есть цена — возвращаем её
   if (cityData.buy !== null && cityData.buy > 0) {
     return cityData.buy;
   }
 
-  // Если нет, ищем цену у качества на ступень ниже
   const lowerQuality = item.quality - 1;
-  if (lowerQuality < 1) return null; // Ниже обычного не бывает
+  if (lowerQuality < 1) return null;
 
   const lowerKey = `${item.id}_${lowerQuality}`;
   const lowerItem = marketState[lowerKey];
   
   if (lowerItem && lowerItem[cityKey] && lowerItem[cityKey].buy !== null) {
-    return lowerItem[cityKey].buy + 1; // Цена нижнего качества + 1
+    return lowerItem[cityKey].buy + 1;
   }
 
   return null;
@@ -287,18 +268,18 @@ function calculateFlippingOpportunities() {
 
   const selectedTiers = Array.from(document.querySelectorAll('#tierSelect input:checked')).map(cb => parseInt(cb.value));
   const selectedEnchants = Array.from(document.querySelectorAll('#enchantSelect input:checked')).map(cb => parseInt(cb.value));
-
-  // Получаем значение скорости реализации
   const selectedSpeed = speedSelect ? parseInt(speedSelect.value) : 0;
 
   const filterByTier = selectedTiers.length > 0;
   const filterByEnchant = selectedEnchants.length > 0;
-
   const allRoyalCities = ['caerleon', 'bridgewatch', 'lymhurst', 'fortSterling', 'thetford', 'martlock', 'brecilien'];
   
   Object.values(marketState).forEach(item => {
-    let buyPrice = null;
+    let effectiveBuyPrice = null;
+    let craftDetails = '';
     let buyCityName = '';
+    let isCrafted = false;
+    let craftDetailsObj = null;
     
     const itemTier = item.tier || 0;
     const itemEnchant = item.enchantment || 0;
@@ -306,53 +287,194 @@ function calculateFlippingOpportunities() {
     if (filterByTier && !selectedTiers.includes(itemTier)) return;
     if (filterByEnchant && !selectedEnchants.includes(itemEnchant)) return;
 
-    if (flipBuyCity === 'any') {
-      let minPrice = Infinity;
-      let bestCity = '';
-      
-      allRoyalCities.forEach(city => {
-        const cityData = item[city];
-        if (!cityData) return;
+    if (useEnchantCrafting && item.enchantment > 0 && item.enchantment <= 3) {
+        let bestCraftCost = Infinity;
+        let bestBaseEnchant = -1;
+        let bestCraftDetails = null; 
+        
+        // 1. Пытаемся найти лучший вариант крафта
+        for (let baseEnchant = 0; baseEnchant < item.enchantment; baseEnchant++) {
+            const baseId = baseEnchant === 0 
+                ? item.id.replace(/@\d+$/, '') 
+                : item.id.replace(/@\d+$/, `@${baseEnchant}`);
+            
+            const baseKey = `${baseId}_${item.quality}`;
+            const baseItem = marketState[baseKey];
+            
+            if (!baseItem) continue;
+            
+            // Поиск цены базы
+            let basePrice = null;
+            let baseCityName = '';
+            let baseCommission = 0;
+            
+            if (flipBuyCity === 'any') {
+                let minP = Infinity;
+                allRoyalCities.forEach(city => {
+                    const cd = baseItem[city];
+                    if (!cd) return;
+                    const p = buyMethod === 'order' ? cd.buy : cd.sell;
+                    if (p !== null && p !== undefined && p < minP) {
+                        minP = p;
+                        baseCityName = getCityDisplayName(city);
+                    }
+                });
+                if (minP !== Infinity) basePrice = minP;
+            } else {
+                const cd = baseItem[flipBuyCity];
+                if (cd) {
+                    basePrice = buyMethod === 'order' ? cd.buy : cd.sell;
+                    baseCityName = getCityDisplayName(flipBuyCity);
+                }
+            }
+            
+            if (basePrice === null) continue;
 
-        let priceToCheck = null;
-        if (buyMethod === 'order') {
-          // Используем новую функцию с фоллбэком
-          priceToCheck = getFallbackBuyPrice(item, city);
-        } else {
-          // Для быстрой покупки берем обычную цену продажи
-          priceToCheck = cityData.sell;
+            if (buyMethod === 'order') baseCommission = basePrice * orderFee;
+            
+            // Расчет стоимости материалов
+            let upgradeCost = 0;
+            let validChain = true;
+            let materialsList = []; 
+            
+            for (let e = baseEnchant; e < item.enchantment; e++) {
+                let matType = '';
+                if (e === 0) matType = 'RUNE';
+                else if (e === 1) matType = 'SOUL';
+                else if (e === 2) matType = 'RELIC';
+                else { validChain = false; break; }
+                
+                const matId = `T${item.tier}_${matType}`;
+                const targetItemDict = itemsDict[item.id];
+                let countNeeded = targetItemDict?.enchantMatCount || 100;
+
+                let matPrice = null;
+                let matCityName = '';
+                const matMarketKey = `${matId}_1`;
+                const matMarketItem = marketState[matMarketKey];
+                
+                if (matMarketItem) {
+                    let resourceCities = [];
+                    if (enchantResourceCity === 'target') resourceCities = [flipSellCity === 'any' ? 'blackMarket' : flipSellCity];
+                    else if (enchantResourceCity === 'source') resourceCities = flipBuyCity === 'any' ? allRoyalCities : [flipBuyCity];
+                    else resourceCities = [...allRoyalCities, 'blackMarket'];
+
+                    let minMatPrice = Infinity;
+                    resourceCities.forEach(city => {
+                        const cd = matMarketItem[city];
+                        if (!cd) return;
+                        const p = enchantBuyMethod === 'order' ? cd.buy : cd.sell;
+                        if (p !== null && p !== undefined && p < minMatPrice) {
+                            minMatPrice = p;
+                            matCityName = getCityDisplayName(city);
+                        }
+                    });
+                    if (minMatPrice !== Infinity) matPrice = minMatPrice;
+                }
+                
+                if (matPrice === null) { validChain = false; break; }
+                
+                const stepTotal = matPrice * countNeeded;
+                let matCommission = enchantBuyMethod === 'order' ? stepTotal * orderFee : 0;
+                upgradeCost += stepTotal + matCommission;
+                
+                materialsList.push({
+                    cityName: matCityName, count: countNeeded, matName: getDisplayName(matId),
+                    totalCost: stepTotal, commission: matCommission, isOrder: enchantBuyMethod === 'order'
+                });
+            }
+            
+            if (!validChain) continue;
+            
+            const totalCraftCost = basePrice + baseCommission + upgradeCost;
+            
+            if (totalCraftCost < bestCraftCost) {
+                bestCraftCost = totalCraftCost;
+                bestBaseEnchant = baseEnchant;
+                const baseDictItem = itemsDict[baseId]; 
+                bestCraftDetails = {
+                    totalCost: totalCraftCost,
+                    baseCity: baseCityName,
+                    baseItemName: baseDictItem ? baseDictItem.name : item.name,
+                    basePrice: basePrice, baseCommission: baseCommission,
+                    materials: materialsList
+                };
+            }
         }
         
-        if (priceToCheck !== null && priceToCheck < minPrice) {
-          minPrice = priceToCheck;
-          bestCity = city;
-        }
-      });
-      
-      if (minPrice !== Infinity) {
-        buyPrice = minPrice;
-        buyCityName = getCityDisplayName(bestCity);
-      }
-    } else {
-      const cityData = item[flipBuyCity];
-      if (cityData) {
-        if (buyMethod === 'order') {
-          buyPrice = getFallbackBuyPrice(item, flipBuyCity);
+        // 2. Находим лучшую цену ПРЯМОЙ покупки (стандартный алгоритм)
+        let directBuyPrice = null;
+        let directBuyCity = '';
+        
+        if (flipBuyCity === 'any') {
+            let minP = Infinity;
+            allRoyalCities.forEach(city => {
+                const cd = item[city];
+                if (!cd) return;
+                const p = buyMethod === 'order' ? cd.buy : cd.sell;
+                if (p !== null && p !== undefined && p < minP) {
+                    minP = p;
+                    directBuyCity = getCityDisplayName(city);
+                }
+            });
+            if (minP !== Infinity) directBuyPrice = minP;
         } else {
-          buyPrice = cityData.sell;
+            const cd = item[flipBuyCity];
+            if (cd) {
+                directBuyPrice = buyMethod === 'order' ? cd.buy : cd.sell;
+                directBuyCity = getCityDisplayName(flipBuyCity);
+            }
         }
-        buyCityName = getCityDisplayName(flipBuyCity);
-      }
+
+        // 3. СРАВНИВАЕМ И ВЫБИРАЕМ ЛУЧШИЙ ВАРИАНТ
+        if (bestCraftCost < Infinity && (directBuyPrice === null || bestCraftCost < directBuyPrice)) {
+            // КРАФТ ВЫГОДНЕЕ
+            effectiveBuyPrice = bestCraftCost;
+            isCrafted = true;
+            craftDetailsObj = bestCraftDetails;
+            buyCityName = bestCraftDetails.baseCity; // Берем город из крафта
+        } else if (directBuyPrice !== null) {
+            // ПРЯМАЯ ПОКУПКА ВЫГОДНЕЕ (или крафт невозможен)
+            // ПРОГОНЯЕМ ПО СТАНДАРТНОМУ АЛГОРИТМУ
+            effectiveBuyPrice = directBuyPrice;
+            buyCityName = directBuyCity; // Город из прямой покупки
+            isCrafted = false; // Сбрасываем флаг крафта
+        }
+    } else {
+        // === СТАНДАРТНАЯ ЛОГИКА (если зачарование выключено или enchant=0) ===
+        if (flipBuyCity === 'any') {
+            let minPrice = Infinity;
+            let bestCity = '';
+            allRoyalCities.forEach(city => {
+                const cityData = item[city];
+                if (!cityData) return;
+                let priceToCheck = buyMethod === 'order' ? getFallbackBuyPrice(item, city) : cityData.sell;
+                if (priceToCheck !== null && priceToCheck < minPrice) {
+                    minPrice = priceToCheck;
+                    bestCity = city;
+                }
+            });
+            if (minPrice !== Infinity) {
+                effectiveBuyPrice = minPrice;
+                buyCityName = getCityDisplayName(bestCity);
+            }
+        } else {
+            const cityData = item[flipBuyCity];
+            if (cityData) {
+                effectiveBuyPrice = buyMethod === 'order' ? getFallbackBuyPrice(item, flipBuyCity) : cityData.sell;
+                buyCityName = getCityDisplayName(flipBuyCity);
+            }
+        }
     }
 
-    if (!buyPrice) return;
+    if (!effectiveBuyPrice) return;
 
-    let actualBuyCost = buyPrice;
+    let actualBuyCost = effectiveBuyPrice;
     let buyCommission = 0;
 
     if (buyMethod === 'order') {
-      buyCommission = buyPrice * orderFee;
-      actualBuyCost = buyPrice + buyCommission;
+      buyCommission = effectiveBuyPrice * orderFee;
+      actualBuyCost = effectiveBuyPrice + buyCommission;
     }
 
     let sellPrice = null;
@@ -396,35 +518,30 @@ function calculateFlippingOpportunities() {
     const profit = netSellRevenue - actualBuyCost;
     const profitPercent = (profit / actualBuyCost) * 100;
 
-    // --- ЛОГИКА ФИЛЬТРАЦИИ ПО СКОРОСТИ РЕАЛИЗАЦИИ ---
-    const spd = item.salesPerDay || 0; // Берем продажи или 0, если нет данных
-      
+    // --- ФИЛЬТРАЦИЯ ПО СКОРОСТИ ---
+    const spd = item.salesPerDay || 0;
     if (selectedSpeed > 0) {
       let isAllowed = false;
+      if (spd >= 96) isAllowed = true; 
+      else if (spd >= 24 && selectedSpeed >= 2) isAllowed = true;
+      else if (spd >= 4 && selectedSpeed >= 3) isAllowed = true;
+      else if (spd >= 1 && selectedSpeed >= 4) isAllowed = true;
+      else if (spd === 0 && selectedSpeed === 5) isAllowed = true;
 
-      // Логика соответствия твоему ТЗ:
-      if (spd >= 96) {
-        // От 96 и больше: доступны все варианты (1, 2, 3, 4, 5)
-        isAllowed = true; 
-      } else if (spd >= 24) {
-          // От 24 до 95: доступны 2, 3, 4, 5 (меньше часа, 6ч, сутки, >суток)
-          if (selectedSpeed >= 2) isAllowed = true;
-      } else if (spd >= 4) {
-          // От 4 до 23: доступны 3, 4, 5 (меньше 6ч, сутки, >суток)
-          if (selectedSpeed >= 3) isAllowed = true;
-      } else if (spd >= 1) {
-          // От 1 до 3: доступны 4, 5 (меньше суток, >суток)
-          if (selectedSpeed >= 4) isAllowed = true;
-      } else {
-          // 0 продаж: доступен только вариант 5 (>суток)
-          if (selectedSpeed === 5) isAllowed = true;
-      }
-
-      // Если предмет не подходит под выбранную скорость — пропускаем его
       if (!isAllowed) return; 
     }
 
     if (profitPercent >= flipProfitPercent && profit > 0) {
+      
+      // ИСПРАВЛЕНИЕ: Формируем отображаемую цену прямо здесь
+      let finalDisplayPrice = '';
+      if (isCrafted && craftDetailsObj) {
+          // Если крафт - показываем общую сумму трат
+          finalDisplayPrice = formatPrice(craftDetailsObj.totalCost);
+      } else {
+          // Если обычная покупка - показываем цену с комиссией
+          finalDisplayPrice = formatPrice(actualBuyCost);
+      }
       results.push({
         itemName: item.name,
         tier: itemTier,
@@ -432,13 +549,16 @@ function calculateFlippingOpportunities() {
         quality: item.quality,
         salesPerDay: item.salesPerDay || 0,
         buyCity: buyCityName,
-        buyPriceDisplay: formatPrice(actualBuyCost),
+        buyPriceDisplay: finalDisplayPrice, 
         buyCommissionDisplay: buyCommission > 0 ? `+${formatPrice(buyCommission)}` : '-',
         sellCity: sellCityName,
         netSellPrice: Math.round(netSellRevenue),
         commissionDeducted: Math.round(grossSellRevenue - netSellRevenue),
         profitPercent: profitPercent.toFixed(1),
-        cleanProfit: Math.round(profit)
+        cleanProfit: Math.round(profit),
+        isCrafted: isCrafted,
+        craftDetailsObj: craftDetailsObj,
+        craftDetails: craftDetails
       });
     }
   });
@@ -510,9 +630,48 @@ function renderFlippingResults(results) {
           <div class="item-meta">T${r.tier} | +${r.enchant} | ${getQualityName(r.quality)}</div>
         </td>
         <td class="city-cell buy-info">
-          <div class="city-name">${r.buyCity}</div>
-          <div class="buy-price">${r.buyPriceDisplay}</div>
-          <div class="buy-commission">${r.buyCommissionDisplay}</div>
+          ${r.isCrafted && r.craftDetailsObj ? `
+            <!-- 1. ОБЩАЯ СУММА ТРАТ -->
+            <div class="craft-total-sum">${formatPrice(r.craftDetailsObj.totalCost)}</div>
+            
+            <!-- 2. БАЗОВЫЙ ПРЕДМЕТ -->
+            <div class="craft-base-row">
+              <span class="city-name">${r.craftDetailsObj.baseCity}</span>
+              <span class="craft-item-name">(${r.craftDetailsObj.baseItemName})</span>
+            </div>
+            <div class="buy-price">${formatPrice(r.craftDetailsObj.basePrice)}</div>
+            
+            <!-- Комиссия базы (если есть) -->
+            ${r.craftDetailsObj.baseCommission > 0 ? `
+              <div class="base-commission">+${formatPrice(r.craftDetailsObj.baseCommission)}</div>
+            ` : ''}
+
+            <!-- 3. МАТЕРИАЛЫ -->
+            ${r.craftDetailsObj.materials.map(mat => {
+                const matStepTotal = mat.totalCost + mat.commission; 
+                return `
+              <div class="craft-mat-row">
+                <div class="mat-header">
+                  <span class="city-name-small">${mat.cityName}</span>
+                  <span class="mat-count">(${mat.count} шт.)</span>
+                </div>
+                <div class="mat-info-line">
+                  <span class="mat-name">${mat.matName}</span>
+                  
+                  <!-- Итоговая цена + Комиссия справа -->
+                  <div class="mat-cost-group">
+                    <span class="mat-cost">${formatPrice(matStepTotal)}</span>
+                    ${mat.isOrder ? `<span class="order-plus">+${formatPrice(mat.commission)}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+            `}).join('')}
+          ` : `
+            <!-- Обычный режим -->
+            <div class="city-name">${r.buyCity}</div>
+            <div class="buy-price">${r.buyPriceDisplay}</div>
+            <div class="buy-commission">${r.buyCommissionDisplay}</div>
+          `}
         </td>
         <td class="arrow-cell">
           <div style="font-size: 16px;">➜</div>
@@ -627,8 +786,6 @@ function initBackendControls() {
     const locationDisplay = document.getElementById('currentLocation');
     if (locationDisplay) {
         locationDisplay.textContent = location || 'Неизвестная локация';
-        
-        // Анимация при обновлении
         const indicator = document.getElementById('locationIndicator');
         if (indicator) {
             indicator.classList.remove('updated');
@@ -677,7 +834,6 @@ function updateFlipSortUI() {
   if (!header) return;
   header.classList.remove('asc');
   header.classList.add('desc');
-  const arrowSpan = header.querySelector('.sort-arrow');
   if (flipSortField === 'profitPercent') {
     header.childNodes[0].textContent = 'Прибыль (%) ';
   } else {
@@ -781,7 +937,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  
   function initMultiSelect(selectId, headerText) {
     const container = document.getElementById(selectId);
     if (!container) return;
@@ -842,20 +997,60 @@ document.addEventListener('DOMContentLoaded', () => {
     return () => currentValue;
   }
 
+  // Инициализация переключателя зачарования (исправлен ID на enchantMethodToggle)
+  const enchantToggle = document.getElementById('enchantMethodToggle');
+  if (enchantToggle) {
+      const buttons = enchantToggle.querySelectorAll('.enchant-btn');
+      
+      // Функция для управления видимостью строк
+      const updateEnchantVisibility = (isVisible) => {
+          const rows = document.querySelectorAll('.enchant-setting-row');
+          rows.forEach(row => {
+              row.style.display = isVisible ? 'block' : 'none';
+          });
+      };
+
+      // Устанавливаем начальное состояние
+      updateEnchantVisibility(useEnchantCrafting);
+
+      buttons.forEach(btn => {
+          btn.addEventListener('click', () => {
+              buttons.forEach(b => b.classList.remove('active'));
+              btn.classList.add('active');
+              
+              useEnchantCrafting = btn.dataset.value === 'true';
+              updateEnchantVisibility(useEnchantCrafting);
+              
+              calculateFlippingOpportunities();
+          });
+      });
+  }
+
+  // Инициализация способа покупки ресурсов
+  const enchantBuyToggle = document.getElementById('enchantBuyMethodToggle');
+  if (enchantBuyToggle) {
+      const btns = enchantBuyToggle.querySelectorAll('.trade-btn');
+      btns.forEach(b => {
+          b.addEventListener('click', () => {
+              btns.forEach(x => x.classList.remove('active'));
+              b.classList.add('active');
+              enchantBuyMethod = b.dataset.value;
+              calculateFlippingOpportunities();
+          });
+      });
+  }
+
+  // Инициализация города ресурсов
+  const enchantCitySelect = document.getElementById('enchantResourceCity');
+  if (enchantCitySelect) {
+      enchantCitySelect.addEventListener('change', (e) => {
+          enchantResourceCity = e.target.value;
+          calculateFlippingOpportunities();
+      });
+  }
+
   const getBuyMethod = initTradeToggle('buyMethodToggle', 'instant', 'Способ покупки');
   const getSellMethod = initTradeToggle('sellMethodToggle', 'instant', 'Способ продажи');
-
-  const enchantBtns = document.querySelectorAll('.enchant-btn');
-  let shouldEnchant = true; 
-
-  enchantBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      enchantBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      shouldEnchant = btn.dataset.value === 'true';
-      console.log('Зачарование:', shouldEnchant ? 'Включено' : 'Выключено');
-    });
-  });
 
   document.addEventListener('click', (e) => {
     const sortHeader = e.target.closest('#flipSortHeader');

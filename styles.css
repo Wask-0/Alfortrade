@@ -988,6 +988,170 @@ thead th.sticky-col-2::after {
     animation: locationPulse 1s ease;
 }
 
+#enchantSettings {
+    border-left: 2px solid var(--accent-color);
+}
+
+.craft-badge {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    background: rgba(76, 175, 80, 0.15);
+    color: #4CAF50;
+    border-radius: 4px;
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    cursor: help;
+}
+
+/* Стили для селекта в настройках */
+#enchantResourceCity {
+    cursor: pointer;
+}
+#enchantResourceCity option {
+    background: #1e1e1e;
+    color: white;
+}
+
+/* Стили для блока настроек зачарования */
+.enchant-settings-block {
+    margin-top: 15px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.settings-header {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 8px;
+}
+
+/* Чтобы селект города выглядел как остальные */
+.city-select {
+    width: 100%;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.city-select:focus {
+    border-color: var(--accent-color);
+}
+
+.city-select option {
+    background: #1e1e1e; /* Цвет фона выпадающего списка */
+    color: var(--text-primary);
+}
+
+/* Анимация появления */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Стили для детального отображения крафта */
+.craft-base-row {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    margin-bottom: 2px;
+}
+
+.craft-item-name {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: normal;
+}
+
+.mat-header {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-secondary);
+    margin-bottom: 3px;
+    font-size: 10px;
+}
+
+
+/* Общая сумма трат - самая важная цифра */
+.craft-total-sum {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary); /* Или твой акцентный цвет */
+    margin-bottom: 6px;
+    text-align: center; /* Или left, как тебе удобнее */
+    border-bottom: 1px dashed rgba(255,255,255,0.1);
+    padding-bottom: 4px;
+}
+
+/* Отступы для строки материала */
+.craft-mat-row {
+    margin-top: 8px; /* Увеличенный отступ сверху */
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 11px;
+}
+
+/* Расстояние между названием ресурса и ценой */
+.mat-info-line {
+    display: flex;
+    justify-content: space-between; /* Разносит по краям */
+    align-items: center;
+    gap: 12px; /* Минимальный зазор, если текст длинный */
+    margin-top: 2px;
+}
+
+.mat-name {
+    color: var(--text-primary);
+    font-weight: 500;
+    white-space: nowrap; /* Чтобы название не ломалось */
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Группа: Цена + Комиссия */
+.mat-cost-group {
+    display: flex;
+    align-items: center;
+    gap: 6px; /* Расстояние между ценой и плюсом комиссии */
+    flex-shrink: 0;
+}
+
+.mat-cost {
+    color: #4CAF50;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.order-plus {
+    font-size: 10px;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.08);
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+/* Отступ для комиссии базы, чтобы она была видна */
+.base-commission {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    margin-bottom: 6px; /* Отступ до материалов */
+}
+
 /* ===== АДАПТИВНОСТЬ ===== */
 @media (max-width: 1200px) {
   table { font-size: 12px; }
