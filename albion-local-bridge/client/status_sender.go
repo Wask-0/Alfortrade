@@ -3,13 +3,43 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"log"
 	"net/http"
+	"sync"
 	"time"
 )
 
 type BackendStatus struct {
-	Running   bool `json:"running"`
-	Encrypted bool `json:"encrypted"`
+	Running         bool   `json:"running"`
+	Encrypted       bool   `json:"encrypted"`
+	CurrentLocation string `json:"currentLocation"`
+}
+
+// Глобальная переменная для хранения текущей локации
+var (
+	currentLocation string
+	locationMutex   sync.RWMutex
+)
+
+// UpdateCurrentLocation обновляет текущую локацию игрока
+func UpdateCurrentLocation(locationId string) {
+	locationMutex.Lock()
+	defer locationMutex.Unlock()
+
+	if locationId == "" {
+		currentLocation = "Неизвестная локация"
+	} else {
+		currentLocation = GetLocationName(locationId)
+	}
+
+	log.Printf("[Location] Текущая локация: %s (ID: %s)", currentLocation, locationId)
+}
+
+// GetCurrentLocation возвращает текущую локацию
+func GetCurrentLocation() string {
+	locationMutex.RLock()
+	defer locationMutex.RUnlock()
+	return currentLocation
 }
 
 func SendStatus(status BackendStatus) {
@@ -33,8 +63,9 @@ func StartStatusSender() {
 
 		for range ticker.C {
 			SendStatus(BackendStatus{
-				Running:   true,
-				Encrypted: false, // Здесь будет реальное значение из dashboard
+				Running:         true,
+				Encrypted:       false,
+				CurrentLocation: GetCurrentLocation(),
 			})
 		}
 	}()

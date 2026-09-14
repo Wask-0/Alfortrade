@@ -24,12 +24,13 @@ func (op operationJoinResponse) Process(state *albionState) {
 	state.AODataServerID = 0
 
 	location := normalizeLocationID(op.Location)
-	if location != "" {
-		log.Infof("Updating player location to %v.", location)
-		state.LocationId = location
-	} else {
-		log.Debugf("Ignoring implausible join location value: %q", op.Location)
-	}
+if location != "" {
+    log.Infof("Updating player location to %v.", location)
+    state.LocationId = location
+    UpdateCurrentLocation(location)  // <-- ДОБАВЛЕННАЯ СТРОКА
+} else {
+    log.Debugf("Ignoring implausible join location value: %q", op.Location)
+}
 
 	if state.CharacterId != op.CharacterID {
 		log.Infof("Updating player ID to %v.", op.CharacterID)

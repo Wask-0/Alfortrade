@@ -622,6 +622,20 @@ function initBackendControls() {
     backendToggle.classList.remove('active');
     captureIndicator.classList.remove('active');
   });
+
+  ipcRenderer.on('location-update', (event, location) => {
+    const locationDisplay = document.getElementById('currentLocation');
+    if (locationDisplay) {
+        locationDisplay.textContent = location || 'Неизвестная локация';
+        
+        // Анимация при обновлении
+        const indicator = document.getElementById('locationIndicator');
+        if (indicator) {
+            indicator.classList.remove('updated');
+            setTimeout(() => indicator.classList.add('updated'), 10);
+        }
+    }
+  });
 }
 
 function initNavigation() {

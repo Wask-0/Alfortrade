@@ -956,6 +956,38 @@ thead th.sticky-col-2::after {
 .sortable-flip.desc .sort-arrow::after { content: '▼'; }
 .sortable-flip:not(.asc):not(.desc) .sort-arrow::after { content: '⇅'; }
 
+/* Индикатор текущей локации */
+#locationIndicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+#locationIndicator .indicator-icon {
+    font-size: 16px;
+}
+
+#locationIndicator .indicator-text {
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* Анимация при обновлении локации */
+@keyframes locationPulse {
+    0% { background: rgba(76, 175, 80, 0.2); }
+    100% { background: rgba(255, 255, 255, 0.05); }
+}
+
+#locationIndicator.updated {
+    animation: locationPulse 1s ease;
+}
+
 /* ===== АДАПТИВНОСТЬ ===== */
 @media (max-width: 1200px) {
   table { font-size: 12px; }

@@ -45,6 +45,7 @@ const server = http.createServer((req, res) => {
         const status = JSON.parse(body);
         if (mainWindow) {
           mainWindow.webContents.send('backend-status', status);
+          mainWindow.webContents.send('location-update', status.currentLocation);
         }
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ status: 'ok' }));
