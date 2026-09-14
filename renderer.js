@@ -153,19 +153,20 @@ function processMarketData(data) {
   // SalesPerDay приходит как общая статистика по предмету в локации
   if (salesPerDay !== undefined && salesPerDay !== null) {
     const now = Date.now();
-    const oneMinute = 60 * 1000; // 60000 мс
+    const oneMinute = 60 * 1000;
     
-    // Проверяем, прошло ли больше минуты с последнего обновления ИЛИ новое значение больше старого
-    const isTimePassed = !item.salesUpdated || (now - parseTime(item.salesUpdated)) > oneMinute;
-    const isNewValueHigher = !item.salesPerDay || salesPerDay > item.salesPerDay;
+    // Используем отдельное поле для времени обновления продаж
+    const lastSalesUpdate = city.lastSalesUpdate || 0;
+    const isTimePassed = (now - lastSalesUpdate) > oneMinute;
+    const isNewValueHigher = !city.salesPerDay || salesPerDay > city.salesPerDay;
 
     if (isTimePassed || isNewValueHigher) {
-      item.salesPerDay = salesPerDay;
-      item.salesUpdated = timestamp; // Сохраняем время из пакета игры
+      city.salesPerDay = salesPerDay;
+      city.lastSalesUpdate = now; // Сохраняем текущее время в мс
       
-      console.log(`[DEBUG] Обновлено salesPerDay=${salesPerDay} для ${itemId}. Причина: ${isNewValueHigher ? 'новое макс. значение' : 'прошла 1 минута'}`);
+      console.log(`[DEBUG] Обновлено salesPerDay=${salesPerDay} для ${itemId}_Q${quality} в ${cityKey}. Причина: ${isNewValueHigher ? 'новое макс.' : 'прошла минута'}`);
     } else {
-      console.log(`[DEBUG] Пропущено обновление salesPerDay=${salesPerDay} для ${itemId} (защита от частых обновлений)`);
+      console.log(`[DEBUG] Пропущено salesPerDay=${salesPerDay} для ${itemId}_Q${quality} (защита)`);
     }
   }
 
@@ -212,28 +213,34 @@ function renderTable() {
         return `<td class="no-data">-</td><td class="no-data">-</td>`;
       }
       
+      // Формируем HTML для продаж в день (одинаковый для обеих ячеек)
+      const spdHtml = cityData.salesPerDay 
+        ? `<div class="spd-value" style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;"> ${cityData.salesPerDay}/день</div>` 
+        : '';
+        
       const sellHtml = cityData.sell !== null 
-        ? `<div class="price-value">${formatPrice(cityData.sell)}</div><div class="price-date">(${cityData.sellUpdated || '-'})</div>` 
+        ? `<div class="price-value">${formatPrice(cityData.sell)}</div><div class="price-date">(${cityData.sellUpdated || '-'})</div>${spdHtml}` 
         : `<span class="no-data">-</span>`;
         
       const buyHtml = cityData.buy !== null 
-        ? `<div class="price-value">${formatPrice(cityData.buy)}</div><div class="price-date">(${cityData.buyUpdated || '-'})</div>` 
+        ? `<div class="price-value">${formatPrice(cityData.buy)}</div><div class="price-date">(${cityData.buyUpdated || '-'})</div>${spdHtml}` 
         : `<span class="no-data">-</span>`;
         
       return `<td>${sellHtml}</td><td>${buyHtml}</td>`;
     };
 
+    // При вызове передаем item.salesPerDay
     row.innerHTML = `
       <td class="sticky-col-1 item-name">${getDisplayName(item.name)}</td>
       <td class="sticky-col-2 item-quality">${qualityName}</td>
-      ${formatCell(item.blackMarket)}
-      ${formatCell(item.caerleon)}
-      ${formatCell(item.bridgewatch)}
-      ${formatCell(item.lymhurst)}
-      ${formatCell(item.fortSterling)}
-      ${formatCell(item.thetford)}
-      ${formatCell(item.martlock)}
-      ${formatCell(item.brecilien)}
+      ${formatCell(item.blackMarket, item.salesPerDay)}
+      ${formatCell(item.caerleon, item.salesPerDay)}
+      ${formatCell(item.bridgewatch, item.salesPerDay)}
+      ${formatCell(item.lymhurst, item.salesPerDay)}
+      ${formatCell(item.fortSterling, item.salesPerDay)}
+      ${formatCell(item.thetford, item.salesPerDay)}
+      ${formatCell(item.martlock, item.salesPerDay)}
+      ${formatCell(item.brecilien, item.salesPerDay)}
     `;
     tbody.appendChild(row);
   });
@@ -248,6 +255,29 @@ if (speedSelect) {
   speedSelect.addEventListener('change', () => {
     calculateFlippingOpportunities();
   });
+}
+
+function getFallbackBuyPrice(item, cityKey) {
+  const cityData = item[cityKey];
+  if (!cityData) return null;
+
+  // Если у текущего качества есть цена — возвращаем её
+  if (cityData.buy !== null && cityData.buy > 0) {
+    return cityData.buy;
+  }
+
+  // Если нет, ищем цену у качества на ступень ниже
+  const lowerQuality = item.quality - 1;
+  if (lowerQuality < 1) return null; // Ниже обычного не бывает
+
+  const lowerKey = `${item.id}_${lowerQuality}`;
+  const lowerItem = marketState[lowerKey];
+  
+  if (lowerItem && lowerItem[cityKey] && lowerItem[cityKey].buy !== null) {
+    return lowerItem[cityKey].buy + 1; // Цена нижнего качества + 1
+  }
+
+  return null;
 }
 
 function calculateFlippingOpportunities() {
@@ -283,7 +313,15 @@ function calculateFlippingOpportunities() {
       allRoyalCities.forEach(city => {
         const cityData = item[city];
         if (!cityData) return;
-        const priceToCheck = buyMethod === 'order' ? cityData.buy : cityData.sell;
+
+        let priceToCheck = null;
+        if (buyMethod === 'order') {
+          // Используем новую функцию с фоллбэком
+          priceToCheck = getFallbackBuyPrice(item, city);
+        } else {
+          // Для быстрой покупки берем обычную цену продажи
+          priceToCheck = cityData.sell;
+        }
         
         if (priceToCheck !== null && priceToCheck < minPrice) {
           minPrice = priceToCheck;
@@ -298,7 +336,11 @@ function calculateFlippingOpportunities() {
     } else {
       const cityData = item[flipBuyCity];
       if (cityData) {
-        buyPrice = buyMethod === 'order' ? cityData.buy : cityData.sell;
+        if (buyMethod === 'order') {
+          buyPrice = getFallbackBuyPrice(item, flipBuyCity);
+        } else {
+          buyPrice = cityData.sell;
+        }
         buyCityName = getCityDisplayName(flipBuyCity);
       }
     }
@@ -388,6 +430,7 @@ function calculateFlippingOpportunities() {
         tier: itemTier,
         enchant: itemEnchant,
         quality: item.quality,
+        salesPerDay: item.salesPerDay || 0,
         buyCity: buyCityName,
         buyPriceDisplay: formatPrice(actualBuyCost),
         buyCommissionDisplay: buyCommission > 0 ? `+${formatPrice(buyCommission)}` : '-',
@@ -471,7 +514,12 @@ function renderFlippingResults(results) {
           <div class="buy-price">${r.buyPriceDisplay}</div>
           <div class="buy-commission">${r.buyCommissionDisplay}</div>
         </td>
-        <td class="arrow-cell">➜</td>
+        <td class="arrow-cell">
+          <div style="font-size: 16px;">➜</div>
+          <div style="font-size: 10px; color: var(--text-secondary); margin-top: 4px;">
+            ${r.salesPerDay}/день
+          </div>
+        </td>
         <td class="sell-cell">
           <div class="sell-city">${r.sellCity}</div>
           <div class="sell-price">${formatPrice(r.netSellPrice)}</div>
