@@ -15,6 +15,7 @@ type LocalMarketData struct {
 	Price       int    `json:"price"`       // UnitPriceSilver
 	Quality     int    `json:"quality"`
 	Enchantment int    `json:"enchantment"`
+	SalesPerDay int    `json:"salesPerDay"`
 	Timestamp   string `json:"timestamp"`
 }
 

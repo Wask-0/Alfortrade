@@ -8,6 +8,7 @@ import (
 
 	"github.com/ao-data/albiondata-client/client"
 	"github.com/ao-data/albiondata-client/internal/pcapdriver"
+	"github.com/ao-data/albiondata-client/lib" 
 )
 
 var version = "1.0.0-local-bridge"
@@ -18,6 +19,13 @@ func main() {
 	log.Println("  Отправка данных на http://127.0.0.1:3000")
 	log.Println("  Нажмите Ctrl+C для завершения")
 	log.Println("===========================================")
+
+	log.Println("  Загрузка словарей предметов...")
+	if err := lib.LoadMappings("items.json", "items-dictionary.json"); err != nil {
+		log.Printf("⚠️ Ошибка загрузки словарей: %v. Некоторые функции могут работать некорректно.", err)
+	} else {
+		log.Println("  ✅ Словари успешно загружены.")
+	}
 
 	// Проверяем драйвер захвата пакетов (Npcap/WinPcap)
 	w := pcapdriver.Check()

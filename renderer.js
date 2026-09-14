@@ -10,7 +10,7 @@ const qualityMap = {
 };
 
 function getQualityName(q) {
-  return qualityMap[q] || 'Неизвестно'; // Или просто '', или 'N/A'
+  return qualityMap[q] || 'Неизвестно';
 }
 
 // Загрузка и миграция сохранённых данных при старте
@@ -52,11 +52,11 @@ let flipBuyCity = 'any';
 let flipSellCity = 'blackMarket';
 let flipProfitPercent = 0;
 
-let sortField = 'name'; // 'name' или 'quality'
-let sortDirection = 'asc'; // 'asc' или 'desc'
+let sortField = 'name'; 
+let sortDirection = 'asc'; 
 
-let flipSortField = 'profitPercent'; // 'profitPercent' или 'cleanProfit'
-let flipSortDirection = 'desc';      // 'desc' или 'asc'
+let flipSortField = 'profitPercent'; 
+let flipSortDirection = 'desc';      
 
 let itemsDict = {};
 
@@ -83,7 +83,20 @@ function shouldUpdate(currentPrice, currentUpdated, newPrice, newUpdated, isSell
 }
 
 function processMarketData(data) {
-  const { itemId, locationId, auctionType, price, quality, enchant, timestamp } = data;
+  // Деструктуризация, включая salesPerDay
+  const { itemId, locationId, auctionType, price, quality, enchantment, timestamp, salesPerDay } = data;
+
+  // --- ВРЕМЕННЫЙ ВЫВОД ДЛЯ ОТЛАДКИ ---
+  if (salesPerDay !== undefined && salesPerDay !== null) {
+    console.log("📊 [DEBUG] Получены данные о продажах:", {
+      Item: itemId,
+      Location: locationId,
+      SalesPerDay: salesPerDay,
+      Quality: quality,
+      Enchantment: enchantment
+    });
+  }
+  // ------------------------------------
   
   if (!itemId || !locationId) {
     console.warn("[Frontend] Отброшены данные: отсутствует itemId или locationId", data);
@@ -102,10 +115,10 @@ function processMarketData(data) {
 
   if (!marketState[uniqueKey]) {
     marketState[uniqueKey] = {
-      id: itemId, // Сохраняем ПОЛНЫЙ технический ID (T4_2H_BOW)
+      id: itemId,
       name: dictItem.name || itemId,
       tier: dictItem.tier || extractTier(itemId),
-      enchant: dictItem.enchant !== undefined ? dictItem.enchant : 0,
+      enchantment: dictItem.enchantment !== undefined ? dictItem.enchantment : extractEnchant(itemId),
       quality: quality,
       blackMarket: { sell: null, buy: null, sellUpdated: null, buyUpdated: null },
       caerleon: { sell: null, buy: null, sellUpdated: null, buyUpdated: null },
@@ -122,8 +135,8 @@ function processMarketData(data) {
   const city = item[cityKey];
   if (!city) return;
 
+  // Обновление цен
   const isSell = (auctionType === "offer");
-
   if (isSell) {
     if (shouldUpdate(city.sell, city.sellUpdated, price, timestamp, true)) {
       city.sell = price;
@@ -133,6 +146,26 @@ function processMarketData(data) {
     if (shouldUpdate(city.buy, city.buyUpdated, price, timestamp, false)) {
       city.buy = price;
       city.buyUpdated = timestamp;
+    }
+  }
+
+  // --- НОВАЯ ЛОГИКА: Сохраняем продажи в день ---
+  // SalesPerDay приходит как общая статистика по предмету в локации
+  if (salesPerDay !== undefined && salesPerDay !== null) {
+    const now = Date.now();
+    const oneMinute = 60 * 1000; // 60000 мс
+    
+    // Проверяем, прошло ли больше минуты с последнего обновления ИЛИ новое значение больше старого
+    const isTimePassed = !item.salesUpdated || (now - parseTime(item.salesUpdated)) > oneMinute;
+    const isNewValueHigher = !item.salesPerDay || salesPerDay > item.salesPerDay;
+
+    if (isTimePassed || isNewValueHigher) {
+      item.salesPerDay = salesPerDay;
+      item.salesUpdated = timestamp; // Сохраняем время из пакета игры
+      
+      console.log(`[DEBUG] Обновлено salesPerDay=${salesPerDay} для ${itemId}. Причина: ${isNewValueHigher ? 'новое макс. значение' : 'прошла 1 минута'}`);
+    } else {
+      console.log(`[DEBUG] Пропущено обновление salesPerDay=${salesPerDay} для ${itemId} (защита от частых обновлений)`);
     }
   }
 
@@ -152,7 +185,6 @@ function renderTable() {
 
   const allItems = Object.values(marketState);
   
-  // Фильтрация по названию и качеству
   const filteredItems = allItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery);
     const matchesQuality = selectedQuality === 'all' || item.quality.toString() === selectedQuality;
@@ -175,7 +207,6 @@ function renderTable() {
     const row = document.createElement('tr');
     const qualityName = getQualityName(item.quality);
     
-    // Универсальная функция отрисовки двух колонок (Продажа / Покупка)
     const formatCell = (cityData) => {
       if (cityData.sell === null && cityData.buy === null) {
         return `<td class="no-data">-</td><td class="no-data">-</td>`;
@@ -192,7 +223,6 @@ function renderTable() {
       return `<td>${sellHtml}</td><td>${buyHtml}</td>`;
     };
 
-    // Теперь Black Market рисуется так же, как и остальные города
     row.innerHTML = `
       <td class="sticky-col-1 item-name">${getDisplayName(item.name)}</td>
       <td class="sticky-col-2 item-quality">${qualityName}</td>
@@ -209,52 +239,50 @@ function renderTable() {
   });
 }
 
-// Глобальные переменные состояния флиппинга (убедись, что они объявлены)
 let hasPremium = true;
-let buyMethod = 'instant'; // 'instant' или 'order'
-let sellMethod = 'instant'; // 'instant' или 'order'
+let buyMethod = 'instant';
+let sellMethod = 'instant';
+
+const speedSelect = document.getElementById('speedSelect');
+if (speedSelect) {
+  speedSelect.addEventListener('change', () => {
+    calculateFlippingOpportunities();
+  });
+}
 
 function calculateFlippingOpportunities() {
   const results = [];
   const taxRate = hasPremium ? 0.04 : 0.08;
   const orderFee = 0.025;
 
-  // Получаем текущие значения фильтров из мультиселектов
   const selectedTiers = Array.from(document.querySelectorAll('#tierSelect input:checked')).map(cb => parseInt(cb.value));
   const selectedEnchants = Array.from(document.querySelectorAll('#enchantSelect input:checked')).map(cb => parseInt(cb.value));
-  
-  // Если ничего не выбрано, считаем что выбраны ВСЕ (чтобы фильтр не блокировал вывод)
+
+  // Получаем значение скорости реализации
+  const selectedSpeed = speedSelect ? parseInt(speedSelect.value) : 0;
+
   const filterByTier = selectedTiers.length > 0;
   const filterByEnchant = selectedEnchants.length > 0;
 
-
-  // Список городов для поиска минимальной цены покупки
   const allRoyalCities = ['caerleon', 'bridgewatch', 'lymhurst', 'fortSterling', 'thetford', 'martlock', 'brecilien'];
   
-  // Перебираем все предметы из таблицы рынка
   Object.values(marketState).forEach(item => {
-        // 1. Определяем цену ПОКУПКИ
     let buyPrice = null;
     let buyCityName = '';
-
     
     const itemTier = item.tier || 0;
-    const itemEnchant = item.enchant || 0;
+    const itemEnchant = item.enchantment || 0;
 
-    // === ФИЛЬТРАЦИЯ ПО ТИРУ И ЗАЧАРОВАНИЮ ===
     if (filterByTier && !selectedTiers.includes(itemTier)) return;
     if (filterByEnchant && !selectedEnchants.includes(itemEnchant)) return;
 
     if (flipBuyCity === 'any') {
-      // Ищем минимальную цену среди королевских городов
       let minPrice = Infinity;
       let bestCity = '';
       
       allRoyalCities.forEach(city => {
         const cityData = item[city];
         if (!cityData) return;
-
-        // ВАЖНО: Выбираем поле в зависимости от способа покупки!
         const priceToCheck = buyMethod === 'order' ? cityData.buy : cityData.sell;
         
         if (priceToCheck !== null && priceToCheck < minPrice) {
@@ -268,46 +296,33 @@ function calculateFlippingOpportunities() {
         buyCityName = getCityDisplayName(bestCity);
       }
     } else {
-      // Конкретный город покупки
       const cityData = item[flipBuyCity];
       if (cityData) {
-        // ВАЖНО: Выбираем поле в зависимости от способа покупки!
         buyPrice = buyMethod === 'order' ? cityData.buy : cityData.sell;
         buyCityName = getCityDisplayName(flipBuyCity);
       }
     }
 
-    // Если не нашли цену покупки — пропускаем предмет
     if (!buyPrice) return;
 
-    // Корректируем цену покупки (комиссия за выставление ордера)
     let actualBuyCost = buyPrice;
     let buyCommission = 0;
 
     if (buyMethod === 'order') {
-      // Заказ на покупку: цена request + 2.5% комиссии
       buyCommission = buyPrice * orderFee;
       actualBuyCost = buyPrice + buyCommission;
-    } else {
-      // Быстрая покупка: цена offer, комиссия 0
-      buyCommission = 0;
-      actualBuyCost = buyPrice;
     }
 
-        // 2. Определяем цену ПРОДАЖИ
     let sellPrice = null;
     let sellCityName = '';
 
     if (flipSellCity === 'any') {
-      // Ищем максимальную цену среди всех городов + Black Market
       let maxPrice = -Infinity;
       let bestCity = '';
       
       [...allRoyalCities, 'blackMarket'].forEach(city => {
         const cityData = item[city];
         if (!cityData) return;
-
-        // ВАЖНО: Выбираем поле в зависимости от способа продажи!
         const priceToCheck = sellMethod === 'order' ? cityData.sell : cityData.buy;
         
         if (priceToCheck !== null && priceToCheck > maxPrice) {
@@ -321,41 +336,61 @@ function calculateFlippingOpportunities() {
         sellCityName = getCityDisplayName(bestCity);
       }
     } else {
-      // Конкретный город продажи
       const cityData = item[flipSellCity];
       if (cityData) {
-        // ВАЖНО: Выбираем поле в зависимости от способа продажи!
         sellPrice = sellMethod === 'order' ? cityData.sell : cityData.buy;
         sellCityName = getCityDisplayName(flipSellCity);
       }
     }
 
-    // Если не нашли цену продажи — пропускаем предмет
     if (!sellPrice) return;
 
-    // Корректируем цену продажи
     let grossSellRevenue = sellPrice;
     if (sellMethod === 'order') {
-      // Заказ на продажу: цена offer - 2.5% комиссии
       grossSellRevenue = sellPrice * (1 - orderFee);
     }
-    // При быстрой продаже берется цена buy без дополнительной комиссии за ордер
     const netSellRevenue = grossSellRevenue * (1 - taxRate); 
 
-    // 3. Расчет прибыли
     const profit = netSellRevenue - actualBuyCost;
     const profitPercent = (profit / actualBuyCost) * 100;
 
-    // 4. Фильтрация по желаемой прибыли
+    // --- ЛОГИКА ФИЛЬТРАЦИИ ПО СКОРОСТИ РЕАЛИЗАЦИИ ---
+    const spd = item.salesPerDay || 0; // Берем продажи или 0, если нет данных
+      
+    if (selectedSpeed > 0) {
+      let isAllowed = false;
+
+      // Логика соответствия твоему ТЗ:
+      if (spd >= 96) {
+        // От 96 и больше: доступны все варианты (1, 2, 3, 4, 5)
+        isAllowed = true; 
+      } else if (spd >= 24) {
+          // От 24 до 95: доступны 2, 3, 4, 5 (меньше часа, 6ч, сутки, >суток)
+          if (selectedSpeed >= 2) isAllowed = true;
+      } else if (spd >= 4) {
+          // От 4 до 23: доступны 3, 4, 5 (меньше 6ч, сутки, >суток)
+          if (selectedSpeed >= 3) isAllowed = true;
+      } else if (spd >= 1) {
+          // От 1 до 3: доступны 4, 5 (меньше суток, >суток)
+          if (selectedSpeed >= 4) isAllowed = true;
+      } else {
+          // 0 продаж: доступен только вариант 5 (>суток)
+          if (selectedSpeed === 5) isAllowed = true;
+      }
+
+      // Если предмет не подходит под выбранную скорость — пропускаем его
+      if (!isAllowed) return; 
+    }
+
     if (profitPercent >= flipProfitPercent && profit > 0) {
       results.push({
-        itemName: item.name, // Берем готовое красивое имя
+        itemName: item.name,
         tier: itemTier,
         enchant: itemEnchant,
         quality: item.quality,
         buyCity: buyCityName,
-        buyPriceDisplay: formatPrice(actualBuyCost), // Цена покупки с учетом комиссии
-        buyCommissionDisplay: buyCommission > 0 ? `+${formatPrice(buyCommission)}` : '-', // Комиссия
+        buyPriceDisplay: formatPrice(actualBuyCost),
+        buyCommissionDisplay: buyCommission > 0 ? `+${formatPrice(buyCommission)}` : '-',
         sellCity: sellCityName,
         netSellPrice: Math.round(netSellRevenue),
         commissionDeducted: Math.round(grossSellRevenue - netSellRevenue),
@@ -365,10 +400,8 @@ function calculateFlippingOpportunities() {
     }
   });
 
-  // Сортируем по проценту прибыли (по убыванию)
   results.sort((a, b) => {
     let valA, valB;
-    
     if (flipSortField === 'profitPercent') {
       valA = parseFloat(a.profitPercent);
       valB = parseFloat(b.profitPercent);
@@ -376,14 +409,12 @@ function calculateFlippingOpportunities() {
       valA = a.cleanProfit;
       valB = b.cleanProfit;
     }
-
     return flipSortDirection === 'asc' ? valA - valB : valB - valA;
   });
 
   renderFlippingResults(results);
 }
 
-// Вспомогательная функция для красивых названий городов
 function getCityDisplayName(cityKey) {
   const names = {
     caerleon: 'Caerleon', bridgewatch: 'Bridgewatch', lymhurst: 'Lymhurst',
@@ -393,9 +424,14 @@ function getCityDisplayName(cityKey) {
   return names[cityKey] || cityKey;
 }
 
-// Извлечение тира из ID предмета (если нет в словаре)
 function extractTier(itemId) {
   const match = itemId.match(/^T(\d+)/);
+  return match ? parseInt(match[1]) : 0;
+}
+
+function extractEnchant(itemId) {
+  if (!itemId) return 0;
+  const match = itemId.match(/@(\d+)/);
   return match ? parseInt(match[1]) : 0;
 }
 
@@ -404,10 +440,7 @@ function renderFlippingResults(results) {
   if (!wrapper) return;
 
   if (results.length === 0) {
-    wrapper.innerHTML = `
-      <p style="color: var(--text-primary); opacity: 0.5; font-size: 14px;">
-        Нет сделок с прибылью ≥ ${flipProfitPercent}%
-      </p>`;
+    wrapper.innerHTML = `<p style="color: var(--text-primary); opacity: 0.5; font-size: 14px;">Нет сделок с прибылью ≥ ${flipProfitPercent}%</p>`;
     return;
   }
 
@@ -453,7 +486,6 @@ function renderFlippingResults(results) {
 
   html += '</tbody></table>';
   wrapper.innerHTML = html;
- 
 }
 
 ipcRenderer.on('market-data-received', (event, data) => {
@@ -550,15 +582,9 @@ function initNavigation() {
 
   navBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-      // Убираем активный класс у всех кнопок
       navBtns.forEach(b => b.classList.remove('active'));
-      // Добавляем активный класс нажатой кнопке
       btn.classList.add('active');
-
-      // Скрываем все страницы
       pages.forEach(page => page.classList.remove('active'));
-      
-      // Показываем нужную страницу
       const pageId = `page-${btn.dataset.page}`;
       const targetPage = document.getElementById(pageId);
       if (targetPage) {
@@ -570,18 +596,14 @@ function initNavigation() {
 
 function initSorting() {
   const nameHeader = document.getElementById('sortByName');
-  
   if (nameHeader) {
     nameHeader.addEventListener('click', () => {
-      // Если кликнули по тому же полю - меняем направление
       if (sortField === 'name') {
         sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
       } else {
-        // Если переключились с другого поля - начинаем с ASC
         sortField = 'name';
         sortDirection = 'asc';
       }
-      
       updateSortUI();
       renderTable();
     });
@@ -591,12 +613,8 @@ function initSorting() {
 function updateFlipSortUI() {
   const header = document.getElementById('flipSortHeader');
   if (!header) return;
-  
-  // Всегда показываем стрелку вниз, так как сортировка всегда desc
   header.classList.remove('asc');
   header.classList.add('desc');
-  
-  // Опционально: меняем текст заголовка для ясности
   const arrowSpan = header.querySelector('.sort-arrow');
   if (flipSortField === 'profitPercent') {
     header.childNodes[0].textContent = 'Прибыль (%) ';
@@ -607,11 +625,7 @@ function updateFlipSortUI() {
 
 function updateSortUI() {
   const nameHeader = document.getElementById('sortByName');
-  
-  // Сбрасываем все классы
   nameHeader.classList.remove('active', 'asc', 'desc');
-  
-  // Добавляем нужные
   nameHeader.classList.add('active', sortDirection);
 }
 
@@ -620,24 +634,17 @@ ipcRenderer.on('dictionary-loaded', (event, dictionary) => {
   console.log(`[Renderer] Словарь получен: ${Object.keys(itemsDict).length} записей`);
   
   let updatedCount = 0;
-  
-  // Перебираем ВСЕ записи в marketState по их КЛЮЧАМ
   for (const [key, item] of Object.entries(marketState)) {
-    // Ключ в LS имеет формат "TECHNICAL_ID_QUALITY" (например, T4_2H_BOW_1)
-    // Убираем последнее _число, чтобы получить чистый технический ID
     const parts = key.split('_');
-    const qualitySuffix = parts.pop(); // Удаляем качество (1, 2, 3...)
-    const fullTechId = parts.join('_'); // Собираем обратно: T4_2H_BOW
+    const qualitySuffix = parts.pop();
+    const fullTechId = parts.join('_');
     
     const dictItem = itemsDict[fullTechId];
-    
     if (dictItem) {
-      // Принудительно обновляем данные из словаря
-      item.id = fullTechId; // Исправляем сломанный ID
+      item.id = fullTechId;
       item.name = dictItem.name || item.name;
       item.tier = dictItem.tier;
-      item.enchant = dictItem.enchant !== undefined ? dictItem.enchant : 0;
-      
+      item.enchantment = dictItem.enchantment !== undefined ? dictItem.enchantment : extractEnchant(item.id);
       updatedCount++;
     }
   }
@@ -651,12 +658,10 @@ ipcRenderer.on('dictionary-loaded', (event, dictionary) => {
   calculateFlippingOpportunities();
 });
 
-// Функция получения отображаемого имени
 function getDisplayName(itemId) {
   if (itemsDict[itemId]) {
     return itemsDict[itemId].name;
   }
-  // Если нет в словаре - возвращаем оригинальный ID
   return itemId;
 }
 
@@ -668,7 +673,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initSorting();
   updateSortUI(); 
 
-  // --- Инициализация фильтров РЫНКА ---
   const searchInput = document.getElementById('searchInput');
   const qualitySelect = document.getElementById('qualitySelect');
 
@@ -686,9 +690,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- Инициализация фильтров ФЛИППИНГА ---
-  
-  // 1. Города и процент прибыли
   const buyCitySelect = document.getElementById('buyCitySelect');
   const sellCitySelect = document.getElementById('sellCitySelect');
   const profitInput = document.getElementById('profitPercentInput');
@@ -708,31 +709,20 @@ document.addEventListener('DOMContentLoaded', () => {
     calculateFlippingOpportunities();
   });
 
-  // 2. Переключатель Премиума (используем ГЛОБАЛЬНУЮ переменную)
   const premiumBtns = document.querySelectorAll('.premium-btn');
   premiumBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       premiumBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      hasPremium = btn.dataset.value === 'true'; // Обновляем глобальную переменную
+      hasPremium = btn.dataset.value === 'true';
       calculateFlippingOpportunities();
     });
   });
 
-  // 3. Скорость реализации (пока заглушка, но пересчет можно добавить позже)
-  const speedSelect = document.getElementById('speedSelect');
-  if (speedSelect) {
-    speedSelect.addEventListener('change', (e) => {
-      console.log('Скорость реализации:', e.target.value);
-      // calculateFlippingOpportunities(); // Раскомментируй, когда добавишь логику скорости
-    });
-  }
-
-  // 4. Мультиселекты (Тир и Зачарование)
+  
   function initMultiSelect(selectId, headerText) {
     const container = document.getElementById(selectId);
     if (!container) return;
-
     const header = container.querySelector('.multi-select-header');
     const options = container.querySelector('.multi-select-options');
     const checkboxes = container.querySelectorAll('input[type="checkbox"]');
@@ -759,7 +749,6 @@ document.addEventListener('DOMContentLoaded', () => {
     checkboxes.forEach(cb => {
       cb.addEventListener('change', () => {
         updateHeader();
-        // При изменении любого чекбокса пересчитываем таблицу флиппинга
         calculateFlippingOpportunities(); 
       });
     });
@@ -772,11 +761,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initMultiSelect('tierSelect', 'Выберите уровни...');
   initMultiSelect('enchantSelect', 'Выберите зачарование...');
 
-  // 5. Способы покупки и продажи (вынесены отдельно!)
   function initTradeToggle(toggleId, defaultValue, label) {
     const toggle = document.getElementById(toggleId);
     if (!toggle) return null;
-    
     const buttons = toggle.querySelectorAll('.trade-btn');
     let currentValue = defaultValue;
 
@@ -785,22 +772,17 @@ document.addEventListener('DOMContentLoaded', () => {
         buttons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentValue = btn.dataset.value;
-        
-        // Обновляем глобальные переменные
         if (label === 'Способ покупки') buyMethod = currentValue;
         if (label === 'Способ продажи') sellMethod = currentValue;
-        
         calculateFlippingOpportunities();
       });
     });
-
     return () => currentValue;
   }
 
   const getBuyMethod = initTradeToggle('buyMethodToggle', 'instant', 'Способ покупки');
   const getSellMethod = initTradeToggle('sellMethodToggle', 'instant', 'Способ продажи');
 
-  // 6. Переключатель Зачарования
   const enchantBtns = document.querySelectorAll('.enchant-btn');
   let shouldEnchant = true; 
 
@@ -810,24 +792,18 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.classList.add('active');
       shouldEnchant = btn.dataset.value === 'true';
       console.log('Зачарование:', shouldEnchant ? 'Включено' : 'Выключено');
-      // Пока не влияет на расчет, но можно добавить позже
     });
   });
 
   document.addEventListener('click', (e) => {
     const sortHeader = e.target.closest('#flipSortHeader');
     if (sortHeader) {
-      // Переключаем поле сортировки
       flipSortField = flipSortField === 'profitPercent' ? 'cleanProfit' : 'profitPercent';
-      
-      // Направление ВСЕГДА остается от большего к меньшему
       flipSortDirection = 'desc'; 
-      
       updateFlipSortUI();
       calculateFlippingOpportunities();
     }
   });
 
-  // Первичный расчет при загрузке страницы (чтобы таблица появилась сразу)
   calculateFlippingOpportunities(); 
 });

@@ -17,6 +17,7 @@ type marketHistoryInfo struct {
 	albionId  int32
 	timescale lib.Timescale
 	quality   uint8
+	enchantment uint32 
 }
 
 // marketDataEncryptionCorrelationWindow bounds how long after a market data
