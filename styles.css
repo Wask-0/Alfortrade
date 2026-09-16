@@ -358,15 +358,15 @@ tbody tr:hover td {
 .sticky-col-1 { 
   position: sticky;
   left: -1px; 
-  min-width: 180px; 
-  max-width: 181px; 
+  min-width: 205px; 
+  max-width: 206px; 
   text-align: left; 
   padding-left: 12px; 
   background-color: var(--bg-secondary); 
 }
 
 .sticky-col-2 { 
-  left: 179px; 
+  left: 204px; 
   min-width: 100px; 
   max-width: 100px; 
   text-align: center; 
@@ -1150,6 +1150,34 @@ thead th.sticky-col-2::after {
     color: var(--text-secondary);
     margin-top: 2px;
     margin-bottom: 6px; /* Отступ до материалов */
+}
+
+/* Первая колонка (Название предмета) */
+.sticky-col-1 {
+    min-width: 205px; /* Минимальная ширина, чтобы не сплющивало */
+    max-width: 206px; /* Максимальная ширина до появления скролла */
+    overflow-x: auto; /* Горизонтальная прокрутка */
+    white-space: nowrap; /* Текст в одну строку */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+/* Стилизация скроллбара для Webkit (Electron/Chrome) */
+.sticky-col-1::-webkit-scrollbar {
+    height: 4px;
+}
+
+.sticky-col-1::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sticky-col-1::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+}
+
+.sticky-col-1:hover::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.6);
 }
 
 /* ===== АДАПТИВНОСТЬ ===== */

@@ -62,6 +62,7 @@ let useEnchantCrafting = false;
 // Настройки зачарования
 let enchantBuyMethod = 'instant'; // instant или order
 let enchantResourceCity = 'target'; // target, source, any
+let renderTimeout = null;
 
 let itemsDict = {};
 
@@ -156,7 +157,12 @@ function processMarketData(data) {
   }
 
   localStorage.setItem('albionMarketState', JSON.stringify(marketState));
-  renderTable();
+  if (renderTimeout) clearTimeout(renderTimeout);
+  
+  renderTimeout = setTimeout(() => {
+    renderTable();
+    renderTimeout = null;
+  }, 100);
 }
 
 function formatPrice(rawPrice) {
@@ -214,7 +220,9 @@ function renderTable() {
     };
 
     row.innerHTML = `
-      <td class="sticky-col-1 item-name">${getDisplayName(item.name)}</td>
+      <td class="sticky-col-1 item-name" title="${getDisplayName(item.name)}">
+        ${getDisplayName(item.name)}
+      </td>
       <td class="sticky-col-2 item-quality">${qualityName}</td>
       ${formatCell(item.blackMarket)}
       ${formatCell(item.caerleon)}
@@ -259,6 +267,11 @@ function getFallbackBuyPrice(item, cityKey) {
   }
 
   return null;
+}
+
+function getSalesForCity(item, cityKey) {
+    if (!cityKey || !item[cityKey]) return 0;
+    return item[cityKey].salesPerDay || 0;
 }
 
 function calculateFlippingOpportunities() {
@@ -355,9 +368,21 @@ function calculateFlippingOpportunities() {
                 
                 if (matMarketItem) {
                     let resourceCities = [];
-                    if (enchantResourceCity === 'target') resourceCities = [flipSellCity === 'any' ? 'blackMarket' : flipSellCity];
-                    else if (enchantResourceCity === 'source') resourceCities = flipBuyCity === 'any' ? allRoyalCities : [flipBuyCity];
-                    else resourceCities = [...allRoyalCities, 'blackMarket'];
+                    
+                    // ИСПРАВЛЕНИЕ: Специальная логика для Black Market
+                    if (enchantResourceCity === 'target') {
+                        // Если целевой город - ЧР, материалы берем из Карлеона
+                        if (flipSellCity === 'blackMarket') {
+                            resourceCities = ['caerleon'];
+                        } else {
+                            resourceCities = [flipSellCity];
+                        }
+                    } else if (enchantResourceCity === 'source') {
+                        resourceCities = flipBuyCity === 'any' ? allRoyalCities : [flipBuyCity];
+                    } else {
+                        // Для "Где дешевле" тоже исключаем ЧР, так как там нет материалов
+                        resourceCities = [...allRoyalCities]; 
+                    }
 
                     let minMatPrice = Infinity;
                     resourceCities.forEach(city => {
@@ -369,6 +394,7 @@ function calculateFlippingOpportunities() {
                             matCityName = getCityDisplayName(city);
                         }
                     });
+                    
                     if (minMatPrice !== Infinity) matPrice = minMatPrice;
                 }
                 
@@ -479,6 +505,7 @@ function calculateFlippingOpportunities() {
 
     let sellPrice = null;
     let sellCityName = '';
+    let actualSellCityKey = ''; // <-- Новая переменная для реального ключа города
 
     if (flipSellCity === 'any') {
       let maxPrice = -Infinity;
@@ -491,21 +518,24 @@ function calculateFlippingOpportunities() {
         
         if (priceToCheck !== null && priceToCheck > maxPrice) {
           maxPrice = priceToCheck;
-          bestCity = city;
+          bestCity = city; // Сохраняем КЛЮЧ города (например 'brecilien')
         }
       });
       
       if (maxPrice !== -Infinity) {
         sellPrice = maxPrice;
         sellCityName = getCityDisplayName(bestCity);
+        actualSellCityKey = bestCity; // <-- Запоминаем реальный город
       }
     } else {
       const cityData = item[flipSellCity];
       if (cityData) {
         sellPrice = sellMethod === 'order' ? cityData.sell : cityData.buy;
         sellCityName = getCityDisplayName(flipSellCity);
+        actualSellCityKey = flipSellCity; // <-- Если выбран конкретный город, берем его
       }
     }
+
 
     if (!sellPrice) return;
 
@@ -518,15 +548,17 @@ function calculateFlippingOpportunities() {
     const profit = netSellRevenue - actualBuyCost;
     const profitPercent = (profit / actualBuyCost) * 100;
 
-    // --- ФИЛЬТРАЦИЯ ПО СКОРОСТИ ---
-    const spd = item.salesPerDay || 0;
+    const spd = getSalesForCity(item, actualSellCityKey);
+      
     if (selectedSpeed > 0) {
       let isAllowed = false;
-      if (spd >= 96) isAllowed = true; 
-      else if (spd >= 24 && selectedSpeed >= 2) isAllowed = true;
-      else if (spd >= 4 && selectedSpeed >= 3) isAllowed = true;
-      else if (spd >= 1 && selectedSpeed >= 4) isAllowed = true;
-      else if (spd === 0 && selectedSpeed === 5) isAllowed = true;
+      const salesCount = Number(spd) || 0;
+
+      if (selectedSpeed === 5 && salesCount === 0 ) isAllowed = true; 
+      else if (salesCount >= 24 && selectedSpeed === 2) isAllowed = true;
+      else if (salesCount >= 4 && selectedSpeed === 3) isAllowed = true;
+      else if (salesCount >= 1 && selectedSpeed === 4) isAllowed = true;
+      else if (salesCount >= 96 && selectedSpeed === 1) isAllowed = true;
 
       if (!isAllowed) return; 
     }
@@ -547,7 +579,7 @@ function calculateFlippingOpportunities() {
         tier: itemTier,
         enchant: itemEnchant,
         quality: item.quality,
-        salesPerDay: item.salesPerDay || 0,
+        salesPerDay: getSalesForCity(item, flipSellCity === 'any' ? 'blackMarket' : flipSellCity),
         buyCity: buyCityName,
         buyPriceDisplay: finalDisplayPrice, 
         buyCommissionDisplay: buyCommission > 0 ? `+${formatPrice(buyCommission)}` : '-',
@@ -676,7 +708,7 @@ function renderFlippingResults(results) {
         <td class="arrow-cell">
           <div style="font-size: 16px;">➜</div>
           <div style="font-size: 10px; color: var(--text-secondary); margin-top: 4px;">
-            ${r.salesPerDay}/день
+            ${(r.salesPerDay !== undefined && r.salesPerDay !== null) ? r.salesPerDay : 0}/день
           </div>
         </td>
         <td class="sell-cell">
