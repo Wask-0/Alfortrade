@@ -56,7 +56,8 @@ type LocalMarketData struct {
 	SalesPerDay int    `json:"salesPerDay"`
 	Timestamp   string `json:"timestamp"`
 	IsMyOrder   bool   `json:"isMyOrder"`
-	OrderId     int    `json:"orderId"` 
+	OrderId     int    `json:"orderId"`
+	Amount      int    `json:"amount"` 
 }
 
 func SendMyOrderToElectron(data LocalMarketData) {

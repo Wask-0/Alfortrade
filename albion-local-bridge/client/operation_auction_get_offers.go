@@ -56,7 +56,8 @@ type parsedOrder struct {
 	itemId      string
 	locationId  string
 	salesPerDay int
-	orderId     int // Добавили ID ордера для уникальности
+	orderId     int
+	amount      int 
 }
 
 // === ОСНОВНАЯ ЛОГИКА ОБРАБОТКИ ===
@@ -96,6 +97,7 @@ func (op operationAuctionGetOffersResponse) Process(albionState *albionState) {
 		priceFloat, _ := rawOrder["UnitPriceSilver"].(float64)
 		itemId, _ := rawOrder["ItemTypeId"].(string)
 		idFloat, _ := rawOrder["Id"].(float64)
+		amountFloat, _ := rawOrder["Amount"].(float64)
 
 		spdFloat, _ := rawOrder["SalesPerDay"].(float64)
 		salesPerDay := int(spdFloat)
@@ -114,6 +116,7 @@ func (op operationAuctionGetOffersResponse) Process(albionState *albionState) {
 			locationId:  order.LocationID,
 			salesPerDay: salesPerDay,
 			orderId:     int(idFloat),
+			amount:      int(amountFloat),
 		})
 	}
 
@@ -197,7 +200,9 @@ func (op operationAuctionGetOffersResponse) Process(albionState *albionState) {
 				SalesPerDay: p.salesPerDay,
 				Timestamp:   now.Format("2006.01.02 15"),
 				IsMyOrder:   isMyOrder,
-				OrderId:     p.orderId, // <-- ПЕРЕДАЕМ ID
+				OrderId:     p.orderId,
+				Amount:      p.amount,
+				
 			}
 
 			if p.auctionType == "offer" {

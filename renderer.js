@@ -1118,26 +1118,9 @@ document.addEventListener('DOMContentLoaded', () => {
 // Функция рендера таблицы
 let myOrdersByCity = JSON.parse(localStorage.getItem('albionMyOrders') || '{}');
 
-// Функция очистки устаревших данных при запуске
-function cleanExpiredOrders() {
-    const now = Date.now();
-    let changed = false;
-    for (const cityId in myOrdersByCity) {
-        if (now - myOrdersByCity[cityId].lastUpdate > MY_ORDERS_TTL) {
-            delete myOrdersByCity[cityId];
-            changed = true;
-        }
-    }
-    if (changed) {
-        localStorage.setItem('albionMyOrders', JSON.stringify(myOrdersByCity));
-    }
-}
-
-// Вызываем очистку сразу при старте
-cleanExpiredOrders();
-
 // Слушатель новых ордеров от бэкенда
 ipcRenderer.on('my-order-data-received', (event, order) => {
+    console.log('[MyOrders] Получен ордер:', order); 
     if (!order || !order.orderId || !order.locationId) return;
 
     const cityId = order.locationId;
@@ -1184,10 +1167,7 @@ function renderMyOrdersTable() {
     // Собираем все ордера из всех городов в один плоский список
     let allOrders = [];
     for (const cityId in myOrdersByCity) {
-        // Дополнительная проверка на актуальность при рендере
-        if (Date.now() - myOrdersByCity[cityId].lastUpdate <= MY_ORDERS_TTL) {
-            allOrders = allOrders.concat(myOrdersByCity[cityId].orders);
-        }
+        allOrders = allOrders.concat(myOrdersByCity[cityId].orders);
     }
 
     // Применяем фильтры
@@ -1205,10 +1185,15 @@ function renderMyOrdersTable() {
     });
 
     tbody.innerHTML = '';
+    
     filtered.forEach(order => {
         const dictItem = itemsDict[order.itemId] || {};
         const itemName = dictItem.name || order.itemId;
-        const remaining = (order.amount || 0) - (order.sold || 0);
+        
+        // === ВОТ ЭТА СТРОКА ОБЯЗАТЕЛЬНА ===
+        const amount = order.amount || 0; 
+        // ==================================
+        
         const typeLabel = order.auctionType === 'offer' ? 'Продажа' : 'Покупка';
         const typeColor = order.auctionType === 'offer' ? '#ffcc00' : '#00ccff';
 
@@ -1217,7 +1202,7 @@ function renderMyOrdersTable() {
             <td class="col-item-name">${itemName}</td>
             <td class="col-quality">${getQualityName(order.quality)}</td>
             <td class="col-price">${formatPrice(order.price)}</td>
-            <td class="col-amount">${remaining} / ${order.amount || 0}</td>
+            <td class="col-amount">${amount > 0 ? amount : '-'}</td>
             <td class="col-city">${getLocationName(order.locationId)}</td>
             <td class="col-type" style="color: ${typeColor}; font-weight: bold;">${typeLabel}</td>
         `;
