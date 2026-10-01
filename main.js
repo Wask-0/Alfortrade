@@ -54,6 +54,24 @@ const server = http.createServer((req, res) => {
         res.end('Invalid JSON');
       }
     });
+  } else if(req.method==='POST' && req.url==='/my-order-update'){
+      let body='';
+      req.on('data',chunk=>{body+=chunk.toString();});
+      req.on('end',()=>{
+          try{
+              const data=JSON.parse(body);
+              console.log('[Main] Получен личный ордер:', data.itemId); // Дебаг
+              if(mainWindow){
+                  mainWindow.webContents.send('my-order-data-received', data);
+              }
+              res.writeHead(200,{'Content-Type': 'application/json'});
+              res.end(JSON.stringify({status: 'ok'}));
+          }catch(e){
+              console.error('[Main] Ошибка парсинга ордера:', e);
+              res.writeHead(400);
+              res.end('Invalid JSON');
+          }
+      });
   } else {
     res.writeHead(404);
     res.end();

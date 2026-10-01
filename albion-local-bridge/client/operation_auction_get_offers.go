@@ -2,15 +2,32 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ao-data/albiondata-client/internal/dashboard"
 	"github.com/ao-data/albiondata-client/lib"
 )
 
+// === ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ДЛЯ СЧЕТЧИКА И ДЕБАУНСА ===
+type orderCounterState struct {
+	count    int
+	lastSeen time.Time
+}
+
+var (
+	sentOrdersCounter = make(map[string]*orderCounterState)
+	packetDebounce    = make(map[string]time.Time) // Ключ пакета -> время последней обработки
+	counterMutex      sync.Mutex
+	ORDER_TTL         = 3 * time.Minute
+	MAX_PER_ITEM      = 10
+)
+
+// === СТРУКТУРЫ ОПЕРАЦИЙ ===
 type operationAuctionGetOffers struct {
 	Category         string   `mapstructure:"1"`
 	SubCategory      string   `mapstructure:"2"`
@@ -31,7 +48,6 @@ type operationAuctionGetOffersResponse struct {
 	MarketOrders []string `mapstructure:"0"`
 }
 
-// Вспомогательная структура для сортировки
 type parsedOrder struct {
 	raw         map[string]interface{}
 	order       *lib.MarketOrder
@@ -40,12 +56,14 @@ type parsedOrder struct {
 	itemId      string
 	locationId  string
 	salesPerDay int
+	orderId     int // Добавили ID ордера для уникальности
 }
 
-func (op operationAuctionGetOffersResponse) Process(state *albionState) {
+// === ОСНОВНАЯ ЛОГИКА ОБРАБОТКИ ===
+func (op operationAuctionGetOffersResponse) Process(albionState *albionState) {
 	log.Println("[Market] Got response to AuctionGetOffers operation...")
 
-	if !state.IsValidLocation() {
+	if !albionState.IsValidLocation() {
 		log.Println("[Market] Warning: State location is invalid, skipping.")
 		return
 	}
@@ -58,7 +76,6 @@ func (op operationAuctionGetOffersResponse) Process(state *albionState) {
 			continue
 		}
 
-		// Фикс для Smugglers Den / Rest areas
 		if loc, ok := rawOrder["LocationId"].(string); ok && strings.Contains(loc, "@") {
 			rawOrder["LocationId"] = loc
 			if newJson, err := json.Marshal(rawOrder); err == nil {
@@ -71,21 +88,18 @@ func (op operationAuctionGetOffersResponse) Process(state *albionState) {
 			continue
 		}
 
-		// Если в пакете нет города, берем из текущего состояния персонажа
 		if order.LocationID == "" {
-			order.LocationID = state.LocationId
+			order.LocationID = albionState.LocationId
 		}
 
-		// Извлекаем данные
 		auctionType, _ := rawOrder["AuctionType"].(string)
 		priceFloat, _ := rawOrder["UnitPriceSilver"].(float64)
 		itemId, _ := rawOrder["ItemTypeId"].(string)
-		
-		// Пытаемся вытащить SalesPerDay (если игра его присылает в этом пакете)
+		idFloat, _ := rawOrder["Id"].(float64)
+
 		spdFloat, _ := rawOrder["SalesPerDay"].(float64)
 		salesPerDay := int(spdFloat)
 
-		// Финальная проверка локации
 		if order.LocationID == "" {
 			log.Printf("[Market] Warning: LocationID is still empty for Item=%s, Type=%s. Skipping.", itemId, auctionType)
 			continue
@@ -99,6 +113,7 @@ func (op operationAuctionGetOffersResponse) Process(state *albionState) {
 			itemId:      itemId,
 			locationId:  order.LocationID,
 			salesPerDay: salesPerDay,
+			orderId:     int(idFloat),
 		})
 	}
 
@@ -106,9 +121,9 @@ func (op operationAuctionGetOffersResponse) Process(state *albionState) {
 		dashboard.SetEncryptionStatus(dashboard.EncryptionClear)
 	}
 
-	// === РАЗДЕЛЕНИЕ И СОРТИРОВКА ===
-	var offers []parsedOrder   // Продажа (offer)
-	var requests []parsedOrder // Покупка (request)
+	// Разделение и сортировка
+	var offers []parsedOrder
+	var requests []parsedOrder
 
 	for _, p := range allParsed {
 		if p.auctionType == "offer" {
@@ -118,30 +133,60 @@ func (op operationAuctionGetOffersResponse) Process(state *albionState) {
 		}
 	}
 
-	// Сортируем продажи: от дешевых к дорогим (берем минимум)
 	sort.Slice(offers, func(i, j int) bool {
 		return offers[i].price < offers[j].price
 	})
 
-	// Сортируем покупки: от дорогых к дешевым (берем максимум)
 	sort.Slice(requests, func(i, j int) bool {
 		return requests[i].price > requests[j].price
 	})
 
-	// Ограничиваем по 10 штук из каждой категории
-	maxItems := 10
-	if len(offers) > maxItems {
-		offers = offers[:maxItems]
-	}
-	if len(requests) > maxItems {
-		requests = requests[:maxItems]
-	}
+	now := time.Now()
+	myCharId := fmt.Sprintf("%s", albionState.CharacterId)
 
-	log.Printf("[Market] Sending %d offers and %d requests (limited to top %d each)", len(offers), len(requests), maxItems)
+	// === ДЕБАУНС ПАКЕТА ===
+	// Создаем хеш содержимого пакета, чтобы понять, дубликат это или нет
+	packetHash := fmt.Sprintf("offers_%d_requests_%d_loc_%s", len(offers), len(requests), albionState.LocationId)
+	
+	counterMutex.Lock()
+	if lastTime, exists := packetDebounce[packetHash]; exists {
+		if now.Sub(lastTime) < ORDER_TTL {
+			counterMutex.Unlock()
+			log.Printf("[Market] Duplicate packet ignored (hash: %s)", packetHash)
+			return // Игнорируем дубликат пакета целиком
+		}
+	}
+	packetDebounce[packetHash] = now
+	counterMutex.Unlock()
+	// ==================
 
-	// Отправляем только лучшие ордера
+	log.Printf("[Market] Processing %d offers and %d requests", len(offers), len(requests))
+
 	sendParsedOrders := func(list []parsedOrder) {
 		for _, p := range list {
+			key := fmt.Sprintf("%s_%s_%s_%d", p.itemId, p.locationId, p.auctionType, p.orderId)
+
+			counterMutex.Lock()
+			cs, exists := sentOrdersCounter[key]
+			if exists && now.Sub(cs.lastSeen) > ORDER_TTL {
+				delete(sentOrdersCounter, key)
+				exists = false
+			}
+			if !exists {
+				cs = &orderCounterState{count: 0, lastSeen: now}
+				sentOrdersCounter[key] = cs
+			} else {
+				cs.lastSeen = now
+				if cs.count > 0 {
+					counterMutex.Unlock()
+					continue
+				}
+			}
+			counterMutex.Unlock()
+
+			isMyOrder := false
+
+
 			localData := LocalMarketData{
 				ItemID:      p.itemId,
 				LocationID:  p.locationId,
@@ -150,9 +195,36 @@ func (op operationAuctionGetOffersResponse) Process(state *albionState) {
 				Quality:     int(p.raw["QualityLevel"].(float64)),
 				Enchantment: int(p.raw["EnchantmentLevel"].(float64)),
 				SalesPerDay: p.salesPerDay,
-				Timestamp:   time.Now().Format("2006.01.02 15"),
+				Timestamp:   now.Format("2006.01.02 15"),
+				IsMyOrder:   isMyOrder,
+				OrderId:     p.orderId, // <-- ПЕРЕДАЕМ ID
 			}
-			SendToLocalElectron(localData)
+
+			if p.auctionType == "offer" {
+				if sellerCharId, ok := p.raw["SellerCharacterId"].(string); ok {
+					if sellerCharId == myCharId {
+						isMyOrder = true
+					}
+				}
+			} else if p.auctionType == "request" {
+				if buyerCharId, ok := p.raw["BuyerCharacterId"].(string); ok {
+					if buyerCharId == myCharId {
+						isMyOrder = true
+					}
+				}
+			}			
+
+			// === РАЗДЕЛЕНИЕ ПОТОКОВ ===
+			if isMyOrder {
+				log.Printf("[MY ORDER] Sending to /my-order-update: Item=%s, Price=%d", p.itemId, p.price)
+				SendMyOrderToElectron(localData) // Отдельный эндпоинт
+			} else {
+				SendToLocalElectron(localData)   // Обычный рынок
+			}
+
+			counterMutex.Lock()
+			sentOrdersCounter[key].count = 1
+			counterMutex.Unlock()
 		}
 	}
 

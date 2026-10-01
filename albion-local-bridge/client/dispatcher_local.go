@@ -55,6 +55,21 @@ type LocalMarketData struct {
 	Enchantment int    `json:"enchantment"`
 	SalesPerDay int    `json:"salesPerDay"`
 	Timestamp   string `json:"timestamp"`
+	IsMyOrder   bool   `json:"isMyOrder"`
+	OrderId     int    `json:"orderId"` 
+}
+
+func SendMyOrderToElectron(data LocalMarketData) {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		log.Printf("[LocalBridge] Ошибка маршалинга: %v", err)
+		return
+	}
+	resp, err := http.Post("http://127.0.0.1:3000/my-order-update", "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
 }
 
 // SendToLocalElectron отправляет данные на локальный порт 3000
@@ -68,6 +83,33 @@ func SendToLocalElectron(data LocalMarketData) {
 	resp, err := http.Post("http://127.0.0.1:3000/market-update", "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		// Тихо игнорируем ошибки, если Electron приложение закрыто
+		return
+	}
+	defer resp.Body.Close()
+}
+
+// MyOrder - структура твоего личного ордера
+type MyOrder struct {
+	OrderID     int    `json:"orderId"`
+	ItemID      string `json:"itemId"`
+	Amount      int    `json:"amount"`
+	Price       int    `json:"price"`
+	LocationID  string `json:"locationId"`
+	AuctionType string `json:"auctionType"` // "offer" (продажа) или "request" (покупка)
+	Sold        int    `json:"sold"`        // Сколько уже выполнено
+	Expires     string `json:"expires"`
+}
+
+// SendMyOrdersUpdate отправляет список твоих ордеров на фронтенд
+func SendMyOrdersUpdate(orders []MyOrder) {
+	jsonData, err := json.Marshal(orders)
+	if err != nil {
+		log.Printf("[LocalBridge] Ошибка маршалинга ордеров: %v", err)
+		return
+	}
+	// Отправляем на новый топик my-orders-update
+	resp, err := http.Post("http://127.0.0.1:3000/my-orders-update", "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
 		return
 	}
 	defer resp.Body.Close()

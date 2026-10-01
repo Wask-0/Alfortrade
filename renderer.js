@@ -34,6 +34,8 @@ for (const key of Object.keys(marketState)) {
   }
 }
 
+const MY_ORDERS_TTL = 3 * 60 * 1000;
+
 // Словарь локаций
 const locationMap = {
   "3003": "blackMarket", "3005": "caerleon", "2004": "bridgewatch",
@@ -44,6 +46,16 @@ const locationMap = {
   "Fort Sterling": "fortSterling", "Thetford": "thetford",
   "Martlock": "martlock", "Brecilien": "brecilien"
 };
+
+const locationIdToName = {
+  "3003": "Black Market", "3005": "Caerleon", "2004": "Bridgewatch",
+  "1002": "Lymhurst", "4002": "Fort Sterling", "0007": "Thetford",
+  "3008": "Martlock", "5003": "Brecilien"
+};
+
+function getLocationName(id) {
+  return locationIdToName[id] || id;
+}
 
 // Переменные для фильтрации
 let searchQuery = '';
@@ -89,8 +101,9 @@ function shouldUpdate(currentPrice, currentUpdated, newPrice, newUpdated, isSell
 }
 
 function processMarketData(data) {
-  const { itemId, locationId, auctionType, price, quality, enchantment, timestamp, salesPerDay } = data;
+  const { itemId, locationId, auctionType, price, quality, enchantment, timestamp, salesPerDay, isMyOrder } = data;
 
+  // Дальше идет стандартная логика рынка (оставь как было)
   if (!itemId || !locationId) {
     console.warn("[Frontend] Отброшены данные: отсутствует itemId или locationId", data);
     return;
@@ -836,10 +849,11 @@ function initNavigation() {
       navBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       pages.forEach(page => page.classList.remove('active'));
-      const pageId = `page-${btn.dataset.page}`;
-      const targetPage = document.getElementById(pageId);
+      const targetPage = document.getElementById(`page-${btn.dataset.page}`);
       if (targetPage) {
         targetPage.classList.add('active');
+        // Перерисовываем таблицу ордеров при открытии вкладки
+        if (btn.dataset.page === 'my-orders') renderMyOrdersTable();
       }
     });
   });
@@ -1095,4 +1109,122 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   calculateFlippingOpportunities(); 
+
+    // Фильтры МОИХ ОРДЕРОВ
+  document.getElementById('my-orders-search')?.addEventListener('input', renderMyOrdersTable);
+  document.getElementById('my-orders-city-filter')?.addEventListener('change', renderMyOrdersTable);
 });
+
+// Функция рендера таблицы
+let myOrdersByCity = JSON.parse(localStorage.getItem('albionMyOrders') || '{}');
+
+// Функция очистки устаревших данных при запуске
+function cleanExpiredOrders() {
+    const now = Date.now();
+    let changed = false;
+    for (const cityId in myOrdersByCity) {
+        if (now - myOrdersByCity[cityId].lastUpdate > MY_ORDERS_TTL) {
+            delete myOrdersByCity[cityId];
+            changed = true;
+        }
+    }
+    if (changed) {
+        localStorage.setItem('albionMyOrders', JSON.stringify(myOrdersByCity));
+    }
+}
+
+// Вызываем очистку сразу при старте
+cleanExpiredOrders();
+
+// Слушатель новых ордеров от бэкенда
+ipcRenderer.on('my-order-data-received', (event, order) => {
+    if (!order || !order.orderId || !order.locationId) return;
+
+    const cityId = order.locationId;
+    const now = Date.now();
+
+    // Инициализируем запись для города, если её нет
+    if (!myOrdersByCity[cityId]) {
+        myOrdersByCity[cityId] = { orders: [], lastUpdate: now };
+    }
+
+    const cityData = myOrdersByCity[cityId];
+
+    // Если прошло больше 3 минут с последнего обновления ЭТОГО города — стираем всё
+    if (now - cityData.lastUpdate > MY_ORDERS_TTL) {
+        console.log(`[MyOrders] Таймаут для города ${cityId}. Старые данные удалены.`);
+        cityData.orders = [];
+    }
+
+    // Обновляем время последнего получения данных
+    cityData.lastUpdate = now;
+
+    // Проверяем дубликаты только внутри текущего города
+    const existingIds = new Set(cityData.orders.map(o => o.orderId));
+    if (!existingIds.has(order.orderId)) {
+        cityData.orders.push(order);
+        console.log(`[MyOrders] Добавлен ордер #${order.orderId} в город ${cityId}`);
+    }
+
+    // Сохраняем в localStorage
+    localStorage.setItem('albionMyOrders', JSON.stringify(myOrdersByCity));
+    
+    // Перерисовываем таблицу
+    renderMyOrdersTable();
+});
+
+// Обновленная функция рендера
+function renderMyOrdersTable() {
+    const tbody = document.getElementById('my-orders-body');
+    if (!tbody) return;
+
+    const searchVal = document.getElementById('my-orders-search')?.value.toLowerCase() || '';
+    const cityFilter = document.getElementById('my-orders-city-filter')?.value || 'all';
+
+    // Собираем все ордера из всех городов в один плоский список
+    let allOrders = [];
+    for (const cityId in myOrdersByCity) {
+        // Дополнительная проверка на актуальность при рендере
+        if (Date.now() - myOrdersByCity[cityId].lastUpdate <= MY_ORDERS_TTL) {
+            allOrders = allOrders.concat(myOrdersByCity[cityId].orders);
+        }
+    }
+
+    // Применяем фильтры
+    const filtered = allOrders.filter(order => {
+        const name = (itemsDict[order.itemId]?.name || order.itemId).toLowerCase();
+        const matchesSearch = name.includes(searchVal);
+        const matchesCity = cityFilter === 'all' || order.locationId === cityFilter;
+        return matchesSearch && matchesCity;
+    });
+
+    // Сортировка: сначала продажи, потом покупки; внутри - по цене
+    filtered.sort((a, b) => {
+        if (a.auctionType !== b.auctionType) return a.auctionType === 'offer' ? -1 : 1;
+        return b.price - a.price;
+    });
+
+    tbody.innerHTML = '';
+    filtered.forEach(order => {
+        const dictItem = itemsDict[order.itemId] || {};
+        const itemName = dictItem.name || order.itemId;
+        const remaining = (order.amount || 0) - (order.sold || 0);
+        const typeLabel = order.auctionType === 'offer' ? 'Продажа' : 'Покупка';
+        const typeColor = order.auctionType === 'offer' ? '#ffcc00' : '#00ccff';
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="col-item-name">${itemName}</td>
+            <td class="col-quality">${getQualityName(order.quality)}</td>
+            <td class="col-price">${formatPrice(order.price)}</td>
+            <td class="col-amount">${remaining} / ${order.amount || 0}</td>
+            <td class="col-city">${getLocationName(order.locationId)}</td>
+            <td class="col-type" style="color: ${typeColor}; font-weight: bold;">${typeLabel}</td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: #888;">Нет активных ордеров</td></tr>';
+    }
+}

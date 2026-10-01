@@ -1180,6 +1180,78 @@ thead th.sticky-col-2::after {
     background: rgba(255, 255, 255, 0.6);
 }
 
+/* Принудительные стили для таблицы моих ордеров */
+.my-orders-table-wrapper {
+  height: calc(100vh - 260px); /* Высота экрана минус шапка и фильтры */
+  min-height: 400px;
+  overflow-y: auto; /* Вертикальный скролл */
+  overflow-x: hidden;
+  border-radius: 8px;
+  background: var(--bg-secondary, #1a1a1a);
+  border: 1px solid var(--border-color, #333);
+  margin-top: 15px;
+}
+
+/* Стилизация скроллбара (как на рынке) */
+.my-orders-table-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+.my-orders-table-wrapper::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+.my-orders-table-wrapper::-webkit-scrollbar-thumb {
+  background: var(--accent-color, #4f46e5); /* Твой акцентный цвет */
+  border-radius: 4px;
+}
+.my-orders-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-hover, #4338ca);
+}
+
+/* Фиксация заголовков при прокрутке */
+#my-orders-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-primary, #0c0c0c);
+  z-index: 10;
+  border-bottom: 2px solid var(--border-color, #333);
+  padding: 12px 10px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+}
+
+/* Выравнивание ячеек и подсветка */
+#my-orders-table td {
+  padding: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  vertical-align: middle;
+}
+#my-orders-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Стили для ячеек таблицы "Мои Ордера" */
+#my-orders-table td {
+  padding: 12px 10px !important; /* !important нужен, чтобы перебить возможные остатки инлайнов */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  vertical-align: middle;
+  color: var(--text-primary);
+}
+
+/* Выравнивание колонок как на рынке */
+.col-item-name { text-align: left; }
+.col-quality { text-align: center; color: var(--text-secondary); }
+.col-price { text-align: right; font-family: monospace; }
+.col-amount { text-align: center; color: var(--text-secondary); }
+.col-city { text-align: center; }
+.col-type { text-align: center; }
+
+/* Подсветка при наведении */
+#my-orders-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
 /* ===== АДАПТИВНОСТЬ ===== */
 @media (max-width: 1200px) {
   table { font-size: 12px; }
@@ -1187,4 +1259,3 @@ thead th.sticky-col-2::after {
   .sticky-col-1 { min-width: 150px; max-width: 150px; }
   .sticky-col-2 { left: 150px; min-width: 80px; max-width: 80px; }
 }
-

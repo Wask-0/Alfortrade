@@ -24,6 +24,7 @@
   <div class="navigation-bar">
     <button class="nav-btn active" data-page="market">Рынок</button>
     <button class="nav-btn" data-page="flipping">Флиппинг</button>
+    <button class="nav-btn" data-page="my-orders">Мои Ордера</button>
   </div>
 
 
@@ -264,7 +265,51 @@
       </div>
     </div>
   </div>
+<!-- ИСПРАВЛЕННАЯ СТРАНИЦА МОИХ ОРДЕРОВ -->
+  <div id="page-my-orders" class="page">
+    <div class="container">
+      <!-- Панель фильтров -->
+      <div class="filter-panel">
+        <div class="filter-group">
+          <label for="my-orders-search">Поиск предмета</label>
+          <input type="text" id="my-orders-search" placeholder="Название предмета..." autocomplete="off">
+        </div>
+        <div class="filter-group">
+          <label for="my-orders-city-filter">Город</label>
+          <select id="my-orders-city-filter">
+            <option value="all">Все города</option>
+            <option value="3003">Black Market</option>
+            <option value="3005">Caerleon</option>
+            <option value="2004">Bridgewatch</option>
+            <option value="1002">Lymhurst</option>
+            <option value="4002">Fort Sterling</option>
+            <option value="0007">Thetford</option>
+            <option value="3008">Martlock</option>
+            <option value="5003">Brecilien</option>
+          </select>
+        </div>
+      </div>
 
+      <!-- ВАЖНО: Обертка table-wrapper для прокрутки -->
+      <div class="table-wrapper my-orders-table-wrapper">
+        <table id="my-orders-table" class="market-table">
+          <thead>
+            <tr>
+              <th style="width: 35%;">Предмет</th>
+              <th style="width: 12%;">Качество</th>
+              <th style="width: 13%;">Цена</th>
+              <th style="width: 13%;">Количество</th>
+              <th style="width: 12%;">Город</th>
+              <th style="width: 15%;">Тип</th>
+            </tr>
+          </thead>
+          <tbody id="my-orders-body">
+            <!-- Сюда рендерится список -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
   <script src="renderer.js"></script>
 </body>
 </html>
