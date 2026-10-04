@@ -1,0 +1,1028 @@
+{
+  "T4_2H_DAGGERPAIR_1": {
+    "id": "T4_2H_DAGGERPAIR",
+    "name": "Парные кинжалы 4.0",
+    "tier": 4,
+    "enchantment": 0,
+    "quality": 1,
+    "blackMarket": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "caerleon": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "bridgewatch": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "lymhurst": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "fortSterling": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "thetford": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "martlock": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "brecilien": {
+      "sell": 99950000,
+      "buy": 61160000,
+      "sellUpdated": "2026.10.05 00",
+      "buyUpdated": "2026.10.05 00",
+      "salesPerDay": 51,
+      "lastSalesUpdate": 1791147649396
+    }
+  },
+  "T4_2H_DAGGERPAIR_2": {
+    "id": "T4_2H_DAGGERPAIR",
+    "name": "Парные кинжалы 4.0",
+    "tier": 4,
+    "enchantment": 0,
+    "quality": 2,
+    "blackMarket": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "caerleon": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "bridgewatch": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "lymhurst": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "fortSterling": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "thetford": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "martlock": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "brecilien": {
+      "sell": 119980000,
+      "buy": 62000000,
+      "sellUpdated": "2026.10.05 00",
+      "buyUpdated": "2026.10.05 00",
+      "salesPerDay": 24,
+      "lastSalesUpdate": 1791147655950
+    }
+  },
+  "T4_2H_DAGGERPAIR_4": {
+    "id": "T4_2H_DAGGERPAIR",
+    "name": "Парные кинжалы 4.0",
+    "tier": 4,
+    "enchantment": 0,
+    "quality": 4,
+    "blackMarket": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "caerleon": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "bridgewatch": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "lymhurst": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "fortSterling": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "thetford": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "martlock": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "brecilien": {
+      "sell": 120000000,
+      "buy": 0,
+      "sellUpdated": "2026.10.05 00",
+      "buyUpdated": "2026.10.05 00",
+      "salesPerDay": 2,
+      "lastSalesUpdate": 1791147657868
+    }
+  },
+  "T4_2H_DAGGERPAIR_3": {
+    "id": "T4_2H_DAGGERPAIR",
+    "name": "Парные кинжалы 4.0",
+    "tier": 4,
+    "enchantment": 0,
+    "quality": 3,
+    "blackMarket": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "caerleon": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "bridgewatch": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "lymhurst": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "fortSterling": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "thetford": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "martlock": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "brecilien": {
+      "sell": 129990000,
+      "buy": 0,
+      "sellUpdated": "2026.10.05 00",
+      "buyUpdated": "2026.10.05 00",
+      "salesPerDay": 15,
+      "lastSalesUpdate": 1791147656980
+    }
+  },
+  "T4_2H_DAGGERPAIR@1_1": {
+    "id": "T4_2H_DAGGERPAIR@1",
+    "name": "Парные кинжалы 4.1",
+    "tier": 4,
+    "enchantment": 1,
+    "quality": 1,
+    "blackMarket": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "caerleon": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "bridgewatch": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "lymhurst": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "fortSterling": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "thetford": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "martlock": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "brecilien": {
+      "sell": null,
+      "buy": 57620000,
+      "sellUpdated": null,
+      "buyUpdated": "2026.10.05 00",
+      "salesPerDay": 19,
+      "lastSalesUpdate": 1791147672348
+    }
+  },
+  "T4_2H_DAGGERPAIR@1_2": {
+    "id": "T4_2H_DAGGERPAIR@1",
+    "name": "Парные кинжалы 4.1",
+    "tier": 4,
+    "enchantment": 1,
+    "quality": 2,
+    "blackMarket": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "caerleon": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "bridgewatch": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "lymhurst": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "fortSterling": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "thetford": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "martlock": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "brecilien": {
+      "sell": null,
+      "buy": 57760000,
+      "sellUpdated": null,
+      "buyUpdated": "2026.10.05 00",
+      "salesPerDay": 16,
+      "lastSalesUpdate": 1791147673280
+    }
+  },
+  "T4_2H_DAGGERPAIR@1_3": {
+    "id": "T4_2H_DAGGERPAIR@1",
+    "name": "Парные кинжалы 4.1",
+    "tier": 4,
+    "enchantment": 1,
+    "quality": 3,
+    "blackMarket": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "caerleon": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "bridgewatch": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "lymhurst": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "fortSterling": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "thetford": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "martlock": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "brecilien": {
+      "sell": 118870000,
+      "buy": 57740000,
+      "sellUpdated": "2026.10.05 00",
+      "buyUpdated": "2026.10.05 00",
+      "salesPerDay": 6,
+      "lastSalesUpdate": 1791147674232
+    }
+  },
+  "T4_2H_DAGGERPAIR@1_4": {
+    "id": "T4_2H_DAGGERPAIR@1",
+    "name": "Парные кинжалы 4.1",
+    "tier": 4,
+    "enchantment": 1,
+    "quality": 4,
+    "blackMarket": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "caerleon": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "bridgewatch": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "lymhurst": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "fortSterling": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "thetford": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "martlock": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "brecilien": {
+      "sell": 399980000,
+      "buy": 0,
+      "sellUpdated": "2026.10.05 00",
+      "buyUpdated": "2026.10.05 00",
+      "salesPerDay": 6,
+      "lastSalesUpdate": 1791147675226
+    }
+  },
+  "T4_2H_DAGGERPAIR@1_5": {
+    "id": "T4_2H_DAGGERPAIR@1",
+    "name": "Парные кинжалы 4.1",
+    "tier": 4,
+    "enchantment": 1,
+    "quality": 5,
+    "blackMarket": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "caerleon": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "bridgewatch": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "lymhurst": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "fortSterling": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "thetford": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "martlock": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "brecilien": {
+      "sell": 989890000,
+      "buy": null,
+      "sellUpdated": "2026.10.05 00",
+      "buyUpdated": null,
+      "salesPerDay": 0,
+      "lastSalesUpdate": 1791147674241
+    }
+  },
+  "T4_2H_DAGGERPAIR@2_1": {
+    "id": "T4_2H_DAGGERPAIR@2",
+    "name": "Парные кинжалы 4.2",
+    "tier": 4,
+    "enchantment": 2,
+    "quality": 1,
+    "blackMarket": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "caerleon": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "bridgewatch": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "lymhurst": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "fortSterling": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "thetford": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "martlock": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "brecilien": {
+      "sell": null,
+      "buy": 216140000,
+      "sellUpdated": null,
+      "buyUpdated": "2026.10.05 00",
+      "salesPerDay": 10,
+      "lastSalesUpdate": 1791147679144
+    }
+  },
+  "T4_2H_DAGGERPAIR@2_2": {
+    "id": "T4_2H_DAGGERPAIR@2",
+    "name": "Парные кинжалы 4.2",
+    "tier": 4,
+    "enchantment": 2,
+    "quality": 2,
+    "blackMarket": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "caerleon": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "bridgewatch": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "lymhurst": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "fortSterling": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "thetford": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "martlock": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "brecilien": {
+      "sell": null,
+      "buy": 216340000,
+      "sellUpdated": null,
+      "buyUpdated": "2026.10.05 00",
+      "salesPerDay": 11,
+      "lastSalesUpdate": 1791147679984
+    }
+  },
+  "T4_2H_DAGGERPAIR@2_3": {
+    "id": "T4_2H_DAGGERPAIR@2",
+    "name": "Парные кинжалы 4.2",
+    "tier": 4,
+    "enchantment": 2,
+    "quality": 3,
+    "blackMarket": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "caerleon": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "bridgewatch": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "lymhurst": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "fortSterling": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "thetford": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "martlock": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "brecilien": {
+      "sell": null,
+      "buy": 216340000,
+      "sellUpdated": null,
+      "buyUpdated": "2026.10.05 00",
+      "salesPerDay": 5,
+      "lastSalesUpdate": 1791147681038
+    }
+  },
+  "T4_2H_DAGGERPAIR@2_4": {
+    "id": "T4_2H_DAGGERPAIR@2",
+    "name": "Парные кинжалы 4.2",
+    "tier": 4,
+    "enchantment": 2,
+    "quality": 4,
+    "blackMarket": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "caerleon": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "bridgewatch": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "lymhurst": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "fortSterling": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "thetford": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "martlock": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "brecilien": {
+      "sell": null,
+      "buy": 285660000,
+      "sellUpdated": null,
+      "buyUpdated": "2026.10.05 00",
+      "salesPerDay": 16,
+      "lastSalesUpdate": 1791147681936
+    }
+  },
+  "T4_2H_DAGGERPAIR@3_1": {
+    "id": "T4_2H_DAGGERPAIR@3",
+    "name": "Парные кинжалы 4.3",
+    "tier": 4,
+    "enchantment": 3,
+    "quality": 1,
+    "blackMarket": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "caerleon": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "bridgewatch": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "lymhurst": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "fortSterling": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "thetford": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "martlock": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "brecilien": {
+      "sell": 1487790000,
+      "buy": 320600000,
+      "sellUpdated": "2026.10.05 00",
+      "buyUpdated": "2026.10.05 00",
+      "salesPerDay": 1,
+      "lastSalesUpdate": 1791147684470
+    }
+  },
+  "T4_2H_DAGGERPAIR@3_2": {
+    "id": "T4_2H_DAGGERPAIR@3",
+    "name": "Парные кинжалы 4.3",
+    "tier": 4,
+    "enchantment": 3,
+    "quality": 2,
+    "blackMarket": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "caerleon": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "bridgewatch": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "lymhurst": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "fortSterling": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "thetford": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "martlock": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "brecilien": {
+      "sell": 1487790000,
+      "buy": 330160000,
+      "sellUpdated": "2026.10.05 00",
+      "buyUpdated": "2026.10.05 00",
+      "salesPerDay": 6,
+      "lastSalesUpdate": 1791147685189
+    }
+  },
+  "T4_2H_DAGGERPAIR@3_3": {
+    "id": "T4_2H_DAGGERPAIR@3",
+    "name": "Парные кинжалы 4.3",
+    "tier": 4,
+    "enchantment": 3,
+    "quality": 3,
+    "blackMarket": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "caerleon": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "bridgewatch": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "lymhurst": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "fortSterling": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "thetford": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "martlock": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "brecilien": {
+      "sell": 1799930000,
+      "buy": 330160000,
+      "sellUpdated": "2026.10.05 00",
+      "buyUpdated": "2026.10.05 00",
+      "salesPerDay": 16,
+      "lastSalesUpdate": 1791147685963
+    }
+  },
+  "T4_2H_DAGGERPAIR@3_5": {
+    "id": "T4_2H_DAGGERPAIR@3",
+    "name": "Парные кинжалы 4.3",
+    "tier": 4,
+    "enchantment": 3,
+    "quality": 5,
+    "blackMarket": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "caerleon": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "bridgewatch": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "lymhurst": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "fortSterling": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "thetford": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "martlock": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "brecilien": {
+      "sell": 2500000000,
+      "buy": 0,
+      "sellUpdated": "2026.10.05 00",
+      "buyUpdated": "2026.10.05 00",
+      "salesPerDay": 1,
+      "lastSalesUpdate": 1791147688484
+    }
+  },
+  "T4_2H_DAGGERPAIR@3_4": {
+    "id": "T4_2H_DAGGERPAIR@3",
+    "name": "Парные кинжалы 4.3",
+    "tier": 4,
+    "enchantment": 3,
+    "quality": 4,
+    "blackMarket": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "caerleon": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "bridgewatch": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "lymhurst": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "fortSterling": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "thetford": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "martlock": {
+      "sell": null,
+      "buy": null,
+      "sellUpdated": null,
+      "buyUpdated": null
+    },
+    "brecilien": {
+      "sell": 2509910000,
+      "buy": 1020180000,
+      "sellUpdated": "2026.10.05 00",
+      "buyUpdated": "2026.10.05 00",
+      "salesPerDay": 10,
+      "lastSalesUpdate": 1791147686709
+    }
+  }
+}

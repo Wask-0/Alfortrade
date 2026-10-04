@@ -1,7 +1,7 @@
 // renderer.js
 const { ipcRenderer } = require('electron');
 const { state, saveMarketState } = require('./js/store.js');
-const { processMarketData, renderTable, initMarketFilters, initSorting, updateSortUI } = require('./js/market.js');
+const { processMarketData, renderTable, initMarketFilters, initSorting, updateSortUI, initMarketExportImport } = require('./js/market.js');
 const { calculateFlippingOpportunities, initFlippingFilters, updateFlipSortUI } = require('./js/flipping.js');
 const { renderMyOrdersTable, initMyOrdersListener } = require('./js/my-orders.js');
 
@@ -168,6 +168,7 @@ function initApp() {
     initMarketFilters();
     initSorting();
     updateSortUI();
+    initMarketExportImport();
     
     initFlippingFilters();
     updateFlipSortUI();

@@ -179,4 +179,64 @@ function updateSortUI() {
   }
 }
 
-module.exports = { processMarketData, renderTable, initMarketFilters, initSorting, updateSortUI };
+const { ipcRenderer } = require('electron');
+
+function initMarketExportImport() {
+  const exportBtn = document.getElementById('exportMarketData');
+  const importBtn = document.getElementById('importMarketData');
+
+  if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+      ipcRenderer.send('export-market-data', state.marketState);
+    });
+  }
+
+  if (importBtn) {
+    importBtn.addEventListener('click', () => {
+      ipcRenderer.send('import-market-data');
+    });
+  }
+
+  // Слушатель результата импорта
+  ipcRenderer.on('market-data-imported', (event, importedData) => {
+    if (!importedData || typeof importedData !== 'object') {
+      alert('Ошибка: файл не содержит корректных данных рынка');
+      return;
+    }
+
+    // Миграция: если ключ не содержит '_', считаем, что это старая запись с качеством 1
+    const newMarketState = {};
+    for (const [key, value] of Object.entries(importedData)) {
+      if (!key.includes('_')) {
+        newMarketState[`${key}_1`] = { ...value, quality: 1 };
+      } else {
+        newMarketState[key] = value;
+      }
+    }
+
+    // Обновляем state
+    Object.assign(state.marketState, newMarketState);
+    saveMarketState();
+    
+    // Перерисовываем таблицу
+    renderTable();
+    
+    // Пересчитываем флиппинг
+    if (window.calculateFlippingOpportunities) {
+      window.calculateFlippingOpportunities();
+    }
+
+    const itemCount = Object.keys(newMarketState).length;
+    alert(`Успешно импортировано ${itemCount} предметов`);
+  });
+
+  ipcRenderer.on('market-data-exported', (event, success, message) => {
+    if (success) {
+      alert('Данные успешно экспортированы');
+    } else {
+      alert(`Ошибка экспорта: ${message}`);
+    }
+  });
+}
+
+module.exports = { processMarketData, renderTable, initMarketFilters, initSorting, updateSortUI, initMarketExportImport };

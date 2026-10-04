@@ -196,3 +196,56 @@ ipcMain.on('window-close', () => {
   }
   mainWindow.close();
 });
+
+// ===== ЭКСПОРТ И ИМПОРТ ДАННЫХ РЫНКА =====
+const { dialog } = require('electron');
+
+ipcMain.on('export-market-data', async (event, marketData) => {
+  try {
+    // Формируем дату: день.месяц (без года)
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const dateSuffix = `${day}.${month}`;
+
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Экспорт данных рынка',
+      defaultPath: path.join(__dirname, `market-data_${dateSuffix}.json`),
+      filters: [
+        { name: 'JSON файлы', extensions: ['json'] },
+        { name: 'Все файлы', extensions: ['*'] }
+      ]
+    });
+
+    if (!result.canceled && result.filePath) {
+      const jsonData = JSON.stringify(marketData, null, 2);
+      fs.writeFileSync(result.filePath, jsonData, 'utf-8');
+      event.reply('market-data-exported', true, 'Данные успешно сохранены');
+    }
+  } catch (error) {
+    console.error('Ошибка экспорта:', error);
+    event.reply('market-data-exported', false, error.message);
+  }
+});
+ipcMain.on('import-market-data', async (event) => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Импорт данных рынка',
+      filters: [
+        { name: 'JSON файлы', extensions: ['json'] },
+        { name: 'Все файлы', extensions: ['*'] }
+      ],
+      properties: ['openFile']
+    });
+
+    if (!result.canceled && result.filePaths.length > 0) {
+      const filePath = result.filePaths[0];
+      const fileContent = fs.readFileSync(filePath, 'utf-8');
+      const importedData = JSON.parse(fileContent);
+      event.reply('market-data-imported', importedData);
+    }
+  } catch (error) {
+    console.error('Ошибка импорта:', error);
+    dialog.showErrorBox('Ошибка импорта', error.message);
+  }
+});

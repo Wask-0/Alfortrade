@@ -1297,3 +1297,42 @@ thead th.sticky-col-2::after {
 .add-to-plan-btn:active {
   transform: translateY(0);
 }
+
+/* ===== КНОПКИ ЭКСПОРТА/ИМПОРТА ===== */
+.filter-group-buttons {
+  display: flex;
+  flex-direction: row;   /* перебиваем column от .filter-group */
+  gap: 8px;
+  margin-left: auto;
+  align-self: center;
+}
+
+.export-btn, .import-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.export-btn:hover, .import-btn:hover {
+  background-color: var(--accent-color);
+  color: #fff;
+  border-color: var(--accent-color);
+}
+
+.export-btn:active, .import-btn:active {
+  transform: translateY(1px);
+}
+
+.export-btn .btn-icon, .import-btn .btn-icon {
+  font-size: 14px;
+}
