@@ -1,6 +1,4 @@
 // js/store.js
-
-// Миграция и загрузка данных рынка
 const savedData = localStorage.getItem('albionMarketState');
 let rawMarketState = savedData ? JSON.parse(savedData) : {};
 
@@ -20,13 +18,11 @@ for (const key of Object.keys(marketState)) {
 }
 localStorage.setItem('albionMarketState', JSON.stringify(marketState));
 
-export const state = {
+const state = {
   itemsDict: {},
   marketState: marketState,
   myOrdersByCity: JSON.parse(localStorage.getItem('albionMyOrders') || '{}'),
-  MY_ORDERS_TTL: 3 * 60 * 1000, // 3 минуты
-  
-  // Настройки флиппинга
+  MY_ORDERS_TTL: 3 * 60 * 1000,
   flipSettings: {
     buyCity: 'any',
     sellCity: 'blackMarket',
@@ -38,8 +34,6 @@ export const state = {
     enchantBuyMethod: 'instant',
     enchantResourceCity: 'target'
   },
-
-  // Настройки сортировки и фильтров
   searchQuery: '',
   selectedQuality: 'all',
   sortField: 'name',
@@ -48,10 +42,13 @@ export const state = {
   flipSortDirection: 'desc'
 };
 
-export function saveMarketState() {
+function saveMarketState() {
   localStorage.setItem('albionMarketState', JSON.stringify(state.marketState));
 }
 
-export function saveMyOrders() {
+function saveMyOrders() {
   localStorage.setItem('albionMyOrders', JSON.stringify(state.myOrdersByCity));
 }
+
+// CommonJS экспорт
+module.exports = { state, saveMarketState, saveMyOrders };

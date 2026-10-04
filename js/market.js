@@ -1,14 +1,15 @@
 // js/market.js
-import { state, saveMarketState } from './store.js';
-import { 
-  locationMap, getQualityName, getDisplayName, formatPrice, 
-  parseTime, shouldUpdate, extractTier, extractEnchant 
-} from './utils.js';
+const { state, saveMarketState } = require('./store.js');
+const { calculateFlippingOpportunities } = require('./flipping.js');
+const {
+  locationMap, getQualityName, getDisplayName, formatPrice,
+  parseTime, shouldUpdate, extractTier, extractEnchant
+} = require('./utils.js');
 
 let renderTimeout = null;
 
-export function processMarketData(data) {
-  const { itemId, locationId, auctionType, price, quality, enchantment, timestamp, salesPerDay } = data;
+function processMarketData(data) {
+  const { itemId, locationId, auctionType, price, quality, timestamp, salesPerDay } = data;
 
   if (!itemId || !locationId) {
     console.warn("[Frontend] Отброшены данные: отсутствует itemId или locationId", data);
@@ -65,7 +66,6 @@ export function processMarketData(data) {
     const lastSalesUpdate = city.lastSalesUpdate || 0;
     const isTimePassed = (now - lastSalesUpdate) > oneMinute;
     const isNewValueHigher = !city.salesPerDay || salesPerDay > city.salesPerDay;
-
     if (isTimePassed || isNewValueHigher) {
       city.salesPerDay = salesPerDay;
       city.lastSalesUpdate = now;
@@ -73,23 +73,22 @@ export function processMarketData(data) {
   }
 
   saveMarketState();
-  
+
   if (renderTimeout) clearTimeout(renderTimeout);
   renderTimeout = setTimeout(() => {
     renderTable();
-    // Триггерим пересчет флиппинга при обновлении рынка
-    if (window.calculateFlippingOpportunities) window.calculateFlippingOpportunities();
+    calculateFlippingOpportunities();
     renderTimeout = null;
   }, 100);
 }
 
-export function renderTable() {
+function renderTable() {
   const tbody = document.getElementById('tableBody');
   if (!tbody) return;
   tbody.innerHTML = '';
 
   const allItems = Object.values(state.marketState);
-  
+
   const filteredItems = allItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(state.searchQuery);
     const matchesQuality = state.selectedQuality === 'all' || item.quality.toString() === state.selectedQuality;
@@ -98,42 +97,33 @@ export function renderTable() {
 
   const sortedItems = filteredItems.sort((a, b) => {
     let comparison = 0;
-    if (state.sortField === 'name') {
-      comparison = a.name.localeCompare(b.name);
-    } else if (state.sortField === 'quality') {
-      comparison = a.quality - b.quality;
-    }
+    if (state.sortField === 'name') comparison = a.name.localeCompare(b.name);
+    else if (state.sortField === 'quality') comparison = a.quality - b.quality;
     return state.sortDirection === 'asc' ? comparison : -comparison;
   });
 
   sortedItems.forEach(item => {
     const row = document.createElement('tr');
     const qualityName = getQualityName(item.quality);
-    
+
     const formatCell = (cityData) => {
       if (cityData.sell === null && cityData.buy === null) {
         return `<td class="no-data">-</td><td class="no-data">-</td>`;
       }
-      
-      const spdHtml = cityData.salesPerDay 
-        ? `<div class="spd-value" style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;"> ${cityData.salesPerDay}/день</div>` 
+      const spdHtml = cityData.salesPerDay
+        ? `<div class="spd-value" style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;"> ${cityData.salesPerDay}/день</div>`
         : '';
-        
-      const sellHtml = cityData.sell !== null 
-        ? `<div class="price-value">${formatPrice(cityData.sell)}</div><div class="price-date">(${cityData.sellUpdated || '-'})</div>${spdHtml}` 
+      const sellHtml = cityData.sell !== null
+        ? `<div class="price-value">${formatPrice(cityData.sell)}</div><div class="price-date">(${cityData.sellUpdated || '-'})</div>${spdHtml}`
         : `<span class="no-data">-</span>`;
-        
-      const buyHtml = cityData.buy !== null 
-        ? `<div class="price-value">${formatPrice(cityData.buy)}</div><div class="price-date">(${cityData.buyUpdated || '-'})</div>${spdHtml}` 
+      const buyHtml = cityData.buy !== null
+        ? `<div class="price-value">${formatPrice(cityData.buy)}</div><div class="price-date">(${cityData.buyUpdated || '-'})</div>${spdHtml}`
         : `<span class="no-data">-</span>`;
-        
       return `<td>${sellHtml}</td><td>${buyHtml}</td>`;
     };
 
     row.innerHTML = `
-      <td class="sticky-col-1 item-name" title="${getDisplayName(item.id)}">
-        ${getDisplayName(item.id)}
-      </td>
+      <td class="sticky-col-1 item-name" title="${getDisplayName(item.id)}">${getDisplayName(item.id)}</td>
       <td class="sticky-col-2 item-quality">${qualityName}</td>
       ${formatCell(item.blackMarket)}
       ${formatCell(item.caerleon)}
@@ -148,17 +138,15 @@ export function renderTable() {
   });
 }
 
-export function initMarketFilters() {
+function initMarketFilters() {
   const searchInput = document.getElementById('searchInput');
   const qualitySelect = document.getElementById('qualitySelect');
-
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
       state.searchQuery = e.target.value.trim().toLowerCase();
       renderTable();
     });
   }
-
   if (qualitySelect) {
     qualitySelect.addEventListener('change', (e) => {
       state.selectedQuality = e.target.value;
@@ -167,7 +155,7 @@ export function initMarketFilters() {
   }
 }
 
-export function initSorting() {
+function initSorting() {
   const nameHeader = document.getElementById('sortByName');
   if (nameHeader) {
     nameHeader.addEventListener('click', () => {
@@ -185,11 +173,10 @@ export function initSorting() {
 
 function updateSortUI() {
   const nameHeader = document.getElementById('sortByName');
-  if(nameHeader) {
+  if (nameHeader) {
     nameHeader.classList.remove('active', 'asc', 'desc');
     nameHeader.classList.add('active', state.sortDirection);
   }
 }
 
-// Экспортируем для использования в renderer.js
-export { updateSortUI };
+module.exports = { processMarketData, renderTable, initMarketFilters, initSorting, updateSortUI };

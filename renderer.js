@@ -1,32 +1,9 @@
 // renderer.js
-import { ipcRenderer } from 'electron';
-import { state, saveMarketState } from './js/store.js';
-import { processMarketData, renderTable, initMarketFilters, initSorting, updateSortUI } from './js/market.js';
-import { calculateFlippingOpportunities, initFlippingFilters, updateFlipSortUI } from './js/flipping.js';
-import { renderMyOrdersTable, initMyOrdersListener } from './js/my-orders.js';
-
-// ===== ГЛОБАЛЬНЫЕ ИНИЦИАЛИЗАЦИИ =====
-document.addEventListener('DOMContentLoaded', () => {
-    initThemeToggle();
-    initWindowControls();
-    initBackendControls();
-    initNavigation();
-    
-    // Инициализация модулей
-    initMarketFilters();
-    initSorting();
-    updateSortUI();
-    
-    initFlippingFilters();
-    updateFlipSortUI();
-    
-    initMyOrdersListener();
-    
-    // Первичный рендер, если данные уже есть
-    renderTable();
-    calculateFlippingOpportunities();
-    renderMyOrdersTable();
-});
+const { ipcRenderer } = require('electron');
+const { state, saveMarketState } = require('./js/store.js');
+const { processMarketData, renderTable, initMarketFilters, initSorting, updateSortUI } = require('./js/market.js');
+const { calculateFlippingOpportunities, initFlippingFilters, updateFlipSortUI } = require('./js/flipping.js');
+const { renderMyOrdersTable, initMyOrdersListener } = require('./js/my-orders.js');
 
 // ===== IPC СЛУШАТЕЛИ =====
 ipcRenderer.on('dictionary-loaded', (event, dictionary) => {
@@ -44,7 +21,6 @@ ipcRenderer.on('dictionary-loaded', (event, dictionary) => {
             item.id = fullTechId;
             item.name = dictItem.name || item.name;
             item.tier = dictItem.tier;
-            // Импортируем extractEnchant динамически или оставим простую логику
             const match = item.id?.match(/@(\d+)/);
             item.enchantment = dictItem.enchantment !== undefined ? dictItem.enchantment : (match ? parseInt(match[1]) : 0);
             updatedCount++;
@@ -52,12 +28,13 @@ ipcRenderer.on('dictionary-loaded', (event, dictionary) => {
     }
     
     if (updatedCount > 0) {
-        console.log(`[Fix] Восстановлено и обновлено ${updatedCount} предметов`);
         saveMarketState();
     }
     
-    renderTable();
-    calculateFlippingOpportunities();
+    if (document.readyState !== 'loading') {
+        renderTable();
+        calculateFlippingOpportunities();
+    }
 });
 
 ipcRenderer.on('market-data-received', (event, data) => {
@@ -65,9 +42,10 @@ ipcRenderer.on('market-data-received', (event, data) => {
     else processMarketData(data);
 });
 
-// ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ УПРАВЛЕНИЯ ОКНОМ И ТЕМОЙ =====
+// ===== ФУНКЦИИ УПРАВЛЕНИЯ ОКНОМ И ТЕМОЙ =====
 function initThemeToggle() {
     const themeToggle = document.getElementById('themeToggle');
+    if (!themeToggle) return;
     const themeIcon = themeToggle.querySelector('.theme-icon');
     const savedTheme = localStorage.getItem('theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
@@ -178,4 +156,32 @@ function initNavigation() {
             }
         });
     });
+}
+
+// ===== ГЛАВНАЯ ИНИЦИАЛИЗАЦИЯ =====
+function initApp() {
+    initThemeToggle();
+    initWindowControls();
+    initBackendControls();
+    initNavigation();
+    
+    initMarketFilters();
+    initSorting();
+    updateSortUI();
+    
+    initFlippingFilters();
+    updateFlipSortUI();
+    
+    initMyOrdersListener();
+    
+    renderTable();
+    calculateFlippingOpportunities();
+    renderMyOrdersTable();
+}
+
+// Запуск при готовности DOM
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    initApp();
 }
