@@ -1263,3 +1263,37 @@ thead th.sticky-col-2::after {
   .sticky-col-1 { min-width: 150px; max-width: 150px; }
   .sticky-col-2 { left: 150px; min-width: 80px; max-width: 80px; }
 }
+
+/* ===== КОЛОНКА ДЕЙСТВИЙ (ФЛИППИНГ) ===== */
+.action-col {
+  text-align: center;
+  width: 100px;
+  border-left: 1px solid var(--border-color);
+}
+
+.action-cell {
+  text-align: center;
+}
+
+.add-to-plan-btn {
+  background-color: var(--accent-color);
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.add-to-plan-btn:hover {
+  background-color: #0056b3; /* Замените на var(--accent-hover), если он у вас прописан */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.add-to-plan-btn:active {
+  transform: translateY(0);
+}
