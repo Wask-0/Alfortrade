@@ -3,7 +3,7 @@ const { state, saveMarketState } = require('./store.js');
 const { calculateFlippingOpportunities } = require('./flipping.js');
 const {
   locationMap, getQualityName, getDisplayName, formatPrice,
-  parseTime, shouldUpdate, extractTier, extractEnchant
+  parseTime, shouldUpdate, extractTier, extractEnchant, getDisplayBuyPrice
 } = require('./utils.js');
 
 let renderTimeout = null;
@@ -106,33 +106,43 @@ function renderTable() {
     const row = document.createElement('tr');
     const qualityName = getQualityName(item.quality);
 
-    const formatCell = (cityData) => {
-      if (cityData.sell === null && cityData.buy === null) {
+    const formatCell = (cityData, cityKey) => {
+      // Для sell используем прямую цену
+      // Для buy — наследуем от нижнего качества если прямой цены нет
+      const buyDisplay = getDisplayBuyPrice(item, cityKey, state.marketState);
+      const isBuyInherited = buyDisplay !== null && buyDisplay > 0 && 
+                             (cityData.buy === null || cityData.buy === 0 || cityData.buy === undefined);
+
+      if (cityData.sell === null && buyDisplay === null) {
         return `<td class="no-data">-</td><td class="no-data">-</td>`;
       }
+      
       const spdHtml = cityData.salesPerDay
         ? `<div class="spd-value" style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;"> ${cityData.salesPerDay}/день</div>`
         : '';
-      const sellHtml = cityData.sell !== null
+        
+      const sellHtml = cityData.sell !== null && cityData.sell > 0
         ? `<div class="price-value">${formatPrice(cityData.sell)}</div><div class="price-date">(${cityData.sellUpdated || '-'})</div>${spdHtml}`
         : `<span class="no-data">-</span>`;
-      const buyHtml = cityData.buy !== null
-        ? `<div class="price-value">${formatPrice(cityData.buy)}</div><div class="price-date">(${cityData.buyUpdated || '-'})</div>${spdHtml}`
+        
+      const buyHtml = buyDisplay !== null && buyDisplay > 0
+        ? `<div class="price-value">${formatPrice(buyDisplay)}${isBuyInherited ? '<span style="color: #f39c12; margin-left: 3px;" title="Цена унаследована от качества ниже">↓</span>' : ''}</div><div class="price-date">(${cityData.buyUpdated || '-'})</div>${spdHtml}`
         : `<span class="no-data">-</span>`;
+        
       return `<td>${sellHtml}</td><td>${buyHtml}</td>`;
     };
 
     row.innerHTML = `
       <td class="sticky-col-1 item-name" title="${getDisplayName(item.id)}">${getDisplayName(item.id)}</td>
       <td class="sticky-col-2 item-quality">${qualityName}</td>
-      ${formatCell(item.blackMarket)}
-      ${formatCell(item.caerleon)}
-      ${formatCell(item.bridgewatch)}
-      ${formatCell(item.lymhurst)}
-      ${formatCell(item.fortSterling)}
-      ${formatCell(item.thetford)}
-      ${formatCell(item.martlock)}
-      ${formatCell(item.brecilien)}
+      ${formatCell(item.blackMarket, 'blackMarket')}
+      ${formatCell(item.caerleon, 'caerleon')}
+      ${formatCell(item.bridgewatch, 'bridgewatch')}
+      ${formatCell(item.lymhurst, 'lymhurst')}
+      ${formatCell(item.fortSterling, 'fortSterling')}
+      ${formatCell(item.thetford, 'thetford')}
+      ${formatCell(item.martlock, 'martlock')}
+      ${formatCell(item.brecilien, 'brecilien')}
     `;
     tbody.appendChild(row);
   });
@@ -197,14 +207,12 @@ function initMarketExportImport() {
     });
   }
 
-  // Слушатель результата импорта
   ipcRenderer.on('market-data-imported', (event, importedData) => {
     if (!importedData || typeof importedData !== 'object') {
       alert('Ошибка: файл не содержит корректных данных рынка');
       return;
     }
 
-    // Миграция: если ключ не содержит '_', считаем, что это старая запись с качеством 1
     const newMarketState = {};
     for (const [key, value] of Object.entries(importedData)) {
       if (!key.includes('_')) {
@@ -214,14 +222,10 @@ function initMarketExportImport() {
       }
     }
 
-    // Обновляем state
     Object.assign(state.marketState, newMarketState);
     saveMarketState();
-    
-    // Перерисовываем таблицу
     renderTable();
     
-    // Пересчитываем флиппинг
     if (window.calculateFlippingOpportunities) {
       window.calculateFlippingOpportunities();
     }

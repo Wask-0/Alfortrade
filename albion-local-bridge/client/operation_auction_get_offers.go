@@ -21,7 +21,6 @@ type orderCounterState struct {
 
 var (
 	sentOrdersCounter = make(map[string]*orderCounterState)
-	packetDebounce    = make(map[string]time.Time) // Ключ пакета -> время последней обработки
 	counterMutex      sync.Mutex
 	ORDER_TTL         = 3 * time.Minute
 	MAX_PER_ITEM      = 10
@@ -147,44 +146,34 @@ func (op operationAuctionGetOffersResponse) Process(albionState *albionState) {
 	now := time.Now()
 	myCharId := fmt.Sprintf("%s", albionState.CharacterId)
 
-	// === ДЕБАУНС ПАКЕТА ===
-	// Создаем хеш содержимого пакета, чтобы понять, дубликат это или нет
-	packetHash := fmt.Sprintf("offers_%d_requests_%d_loc_%s", len(offers), len(requests), albionState.LocationId)
-	
-	counterMutex.Lock()
-	if lastTime, exists := packetDebounce[packetHash]; exists {
-		if now.Sub(lastTime) < ORDER_TTL {
-			counterMutex.Unlock()
-			log.Printf("[Market] Duplicate packet ignored (hash: %s)", packetHash)
-			return // Игнорируем дубликат пакета целиком
-		}
-	}
-	packetDebounce[packetHash] = now
-	counterMutex.Unlock()
-	// ==================
-
 	log.Printf("[Market] Processing %d offers and %d requests", len(offers), len(requests))
 
 	sendParsedOrders := func(list []parsedOrder) {
 		for _, p := range list {
-			key := fmt.Sprintf("%s_%s_%s_%d", p.itemId, p.locationId, p.auctionType, p.orderId)
-
+			if p.price <= 0 {
+				continue
+			}
+			// Ключ теперь включает цену и количество, чтобы отслеживать изменения
+			// Если цена или количество изменились, ордер будет отправлен заново
+			key := fmt.Sprintf("%s_%s_%s_%d_%d_%d", p.itemId, p.locationId, p.auctionType, p.orderId, p.price, p.amount)
+			
 			counterMutex.Lock()
 			cs, exists := sentOrdersCounter[key]
-			if exists && now.Sub(cs.lastSeen) > ORDER_TTL {
-				delete(sentOrdersCounter, key)
-				exists = false
+			if exists && now.Sub(cs.lastSeen) < ORDER_TTL {
+				// Если этот же ордер с той же ценой/количеством уже отправлялся менее 3 минут назад - пропускаем
+				counterMutex.Unlock()
+				continue
 			}
-			if !exists {
-				cs = &orderCounterState{count: 0, lastSeen: now}
-				sentOrdersCounter[key] = cs
-			} else {
-				cs.lastSeen = now
-				if cs.count > 0 {
-					counterMutex.Unlock()
-					continue
+			
+			// Удаляем старые записи для этого ордера (с другими ценами), чтобы не засорять память
+			for k := range sentOrdersCounter {
+				if strings.HasPrefix(k, fmt.Sprintf("%s_%s_%s_%d_", p.itemId, p.locationId, p.auctionType, p.orderId)) {
+					delete(sentOrdersCounter, k)
 				}
 			}
+			
+			// Регистрируем новую отправку
+			sentOrdersCounter[key] = &orderCounterState{count: 1, lastSeen: now}
 			counterMutex.Unlock()
 
 			isMyOrder := false

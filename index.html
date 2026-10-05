@@ -25,6 +25,7 @@
     <button class="nav-btn active" data-page="market">Рынок</button>
     <button class="nav-btn" data-page="flipping">Флиппинг</button>
     <button class="nav-btn" data-page="my-orders">Мои Ордера</button>
+    <button class="nav-btn" data-page="planner">Планировщик</button>
   </div>
 
 
@@ -313,6 +314,42 @@
         </table>
       </div>
     </div>
+  </div>
+  <div id="page-planner" class="page">
+      <div class="container">
+          <div class="filter-panel">
+              <div class="filter-group">
+                  <label for="planner-search">Поиск предмета</label>
+                  <input type="text" id="planner-search" placeholder="Название предмета..." autocomplete="off">
+              </div>
+              <div class="filter-group">
+                  <label for="planner-sort-status">Сортировка по состоянию</label>
+                  <select id="planner-sort-status">
+                      <option value="all">Все состояния</option>
+                      <option value="planned">В плане</option>
+                      <option value="buying">Покупается</option>
+                      <option value="selling">Продаётся</option>
+                      <option value="sold">Продано</option>
+                  </select>
+              </div>
+          </div>
+          <div class="table-wrapper my-orders-table-wrapper">
+              <table id="planner-table" class="market-table flipping-table">
+                  <thead>
+                      <tr>
+                          <th style="width: 25%;">Предмет</th>
+                          <th style="width: 15%;">Город покупки</th>
+                          <th style="width: 15%;">Цена покупки</th>
+                          <th style="width: 15%;">Город продажи</th>
+                          <th style="width: 15%;">Чистая продажа</th>
+                          <th style="width: 10%;">Прибыль</th>
+                          <th style="width: 15%;">Состояние</th>
+                      </tr>
+                  </thead>
+                  <tbody id="planner-body"></tbody>
+              </table>
+          </div>
+      </div>
   </div>
   <script src="renderer.js"></script>
 </body>

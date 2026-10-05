@@ -22,6 +22,7 @@ const state = {
   itemsDict: {},
   marketState: marketState,
   myOrdersByCity: JSON.parse(localStorage.getItem('albionMyOrders') || '{}'),
+  plannerItems: JSON.parse(localStorage.getItem('albionPlannerItems') || '[]'),
   MY_ORDERS_TTL: 3 * 60 * 1000,
   flipSettings: {
     buyCity: 'any',
@@ -50,5 +51,9 @@ function saveMyOrders() {
   localStorage.setItem('albionMyOrders', JSON.stringify(state.myOrdersByCity));
 }
 
+function savePlannerItems() {
+    localStorage.setItem('albionPlannerItems', JSON.stringify(state.plannerItems));
+}
+
 // CommonJS экспорт
-module.exports = { state, saveMarketState, saveMyOrders };
+module.exports = { state, saveMarketState, saveMyOrders, savePlannerItems };

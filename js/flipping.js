@@ -2,17 +2,26 @@
 const { state } = require('./store.js');
 const { getQualityName, getCityDisplayName, formatPrice, getDisplayName } = require('./utils.js');
 
+// Универсальная функция наследования цены от нижнего качества
 function getFallbackBuyPrice(item, cityKey) {
   const cityData = item[cityKey];
-  if (!cityData) return null;
-  if (cityData.buy !== null && cityData.buy > 0) return cityData.buy;
+  
+  // Если есть прямая цена > 0 — возвращаем её
+  if (cityData && cityData.buy !== null && cityData.buy > 0) {
+    return cityData.buy;
+  }
+  
+  // Иначе — наследуем от более низкого качества
   const lowerQuality = item.quality - 1;
   if (lowerQuality < 1) return null;
+  
   const lowerKey = `${item.id}_${lowerQuality}`;
   const lowerItem = state.marketState[lowerKey];
-  if (lowerItem && lowerItem[cityKey] && lowerItem[cityKey].buy !== null) {
-    return lowerItem[cityKey].buy + 1;
+  
+  if (lowerItem && lowerItem[cityKey] && lowerItem[cityKey].buy > 0) {
+    return lowerItem[cityKey].buy;
   }
+  
   return null;
 }
 
@@ -65,15 +74,26 @@ function calculateFlippingOpportunities() {
           allRoyalCities.forEach(city => {
             const cd = baseItem[city];
             if (!cd) return;
-            const p = state.flipSettings.buyMethod === 'order' ? cd.buy : cd.sell;
-            if (p !== null && p !== undefined && p < minP) { minP = p; baseCityName = getCityDisplayName(city); }
+            // Используем getFallbackBuyPrice для наследования
+            const p = state.flipSettings.buyMethod === 'order' 
+              ? getFallbackBuyPrice(baseItem, city) 
+              : (cd.sell !== null && cd.sell > 0 ? cd.sell : null);
+            if (p !== null && p > 0 && p < minP) { minP = p; baseCityName = getCityDisplayName(city); }
           });
-          if (minP !== Infinity) basePrice = minP;
+          if (minP !== Infinity && minP > 0) basePrice = minP;
         } else {
           const cd = baseItem[state.flipSettings.buyCity];
-          if (cd) { basePrice = state.flipSettings.buyMethod === 'order' ? cd.buy : cd.sell; baseCityName = getCityDisplayName(state.flipSettings.buyCity); }
+          if (cd) { 
+            const p = state.flipSettings.buyMethod === 'order' 
+              ? getFallbackBuyPrice(baseItem, state.flipSettings.buyCity) 
+              : (cd.sell !== null && cd.sell > 0 ? cd.sell : null);
+            if (p !== null && p > 0) {
+              basePrice = p;
+              baseCityName = getCityDisplayName(state.flipSettings.buyCity);
+            }
+          }
         }
-        if (basePrice === null) continue;
+        if (basePrice === null || basePrice <= 0) continue;
         if (state.flipSettings.buyMethod === 'order') baseCommission = basePrice * orderFee;
 
         let upgradeCost = 0;
@@ -108,12 +128,14 @@ function calculateFlippingOpportunities() {
             resourceCities.forEach(city => {
               const cd = matMarketItem[city];
               if (!cd) return;
-              const p = state.flipSettings.enchantBuyMethod === 'order' ? cd.buy : cd.sell;
-              if (p !== null && p !== undefined && p < minMatPrice) { minMatPrice = p; matCityName = getCityDisplayName(city); }
+              const p = state.flipSettings.enchantBuyMethod === 'order' 
+                ? (cd.buy !== null && cd.buy > 0 ? cd.buy : null) 
+                : (cd.sell !== null && cd.sell > 0 ? cd.sell : null);
+              if (p !== null && p > 0 && p < minMatPrice) { minMatPrice = p; matCityName = getCityDisplayName(city); }
             });
-            if (minMatPrice !== Infinity) matPrice = minMatPrice;
+            if (minMatPrice !== Infinity && minMatPrice > 0) matPrice = minMatPrice;
           }
-          if (matPrice === null) { validChain = false; break; }
+          if (matPrice === null || matPrice <= 0) { validChain = false; break; }
 
           const stepTotal = matPrice * countNeeded;
           let matCommission = state.flipSettings.enchantBuyMethod === 'order' ? stepTotal * orderFee : 0;
@@ -137,18 +159,28 @@ function calculateFlippingOpportunities() {
         allRoyalCities.forEach(city => {
           const cd = item[city];
           if (!cd) return;
-          const p = state.flipSettings.buyMethod === 'order' ? cd.buy : cd.sell;
-          if (p !== null && p !== undefined && p < minP) { minP = p; directBuyCity = getCityDisplayName(city); }
+          const p = state.flipSettings.buyMethod === 'order' 
+            ? getFallbackBuyPrice(item, city) 
+            : (cd.sell !== null && cd.sell > 0 ? cd.sell : null);
+          if (p !== null && p > 0 && p < minP) { minP = p; directBuyCity = getCityDisplayName(city); }
         });
-        if (minP !== Infinity) directBuyPrice = minP;
+        if (minP !== Infinity && minP > 0) directBuyPrice = minP;
       } else {
         const cd = item[state.flipSettings.buyCity];
-        if (cd) { directBuyPrice = state.flipSettings.buyMethod === 'order' ? cd.buy : cd.sell; directBuyCity = getCityDisplayName(state.flipSettings.buyCity); }
+        if (cd) { 
+          const p = state.flipSettings.buyMethod === 'order' 
+            ? getFallbackBuyPrice(item, state.flipSettings.buyCity) 
+            : (cd.sell !== null && cd.sell > 0 ? cd.sell : null);
+          if (p !== null && p > 0) {
+            directBuyPrice = p;
+            directBuyCity = getCityDisplayName(state.flipSettings.buyCity);
+          }
+        }
       }
 
       if (bestCraftCost < Infinity && (directBuyPrice === null || bestCraftCost < directBuyPrice)) {
         effectiveBuyPrice = bestCraftCost; isCrafted = true; craftDetailsObj = bestCraftDetails; buyCityName = bestCraftDetails.baseCity;
-      } else if (directBuyPrice !== null) {
+      } else if (directBuyPrice !== null && directBuyPrice > 0) {
         effectiveBuyPrice = directBuyPrice; buyCityName = directBuyCity; isCrafted = false;
       }
     } else {
@@ -158,17 +190,35 @@ function calculateFlippingOpportunities() {
         allRoyalCities.forEach(city => {
           const cityData = item[city];
           if (!cityData) return;
-          let priceToCheck = state.flipSettings.buyMethod === 'order' ? getFallbackBuyPrice(item, city) : cityData.sell;
-          if (priceToCheck !== null && priceToCheck < minPrice) { minPrice = priceToCheck; bestCity = city; }
+          let priceToCheck;
+          if (state.flipSettings.buyMethod === 'order') {
+            priceToCheck = getFallbackBuyPrice(item, city);
+          } else {
+            priceToCheck = (cityData.sell !== null && cityData.sell > 0) ? cityData.sell : null;
+          }
+          if (priceToCheck !== null && priceToCheck > 0 && priceToCheck < minPrice) { 
+            minPrice = priceToCheck; bestCity = city; 
+          }
         });
-        if (minPrice !== Infinity) { effectiveBuyPrice = minPrice; buyCityName = getCityDisplayName(bestCity); }
+        if (minPrice !== Infinity && minPrice > 0) { effectiveBuyPrice = minPrice; buyCityName = getCityDisplayName(bestCity); }
       } else {
         const cityData = item[state.flipSettings.buyCity];
-        if (cityData) { effectiveBuyPrice = state.flipSettings.buyMethod === 'order' ? getFallbackBuyPrice(item, state.flipSettings.buyCity) : cityData.sell; buyCityName = getCityDisplayName(state.flipSettings.buyCity); }
+        if (cityData) { 
+          let priceToCheck;
+          if (state.flipSettings.buyMethod === 'order') {
+            priceToCheck = getFallbackBuyPrice(item, state.flipSettings.buyCity);
+          } else {
+            priceToCheck = (cityData.sell !== null && cityData.sell > 0) ? cityData.sell : null;
+          }
+          if (priceToCheck !== null && priceToCheck > 0) {
+            effectiveBuyPrice = priceToCheck;
+            buyCityName = getCityDisplayName(state.flipSettings.buyCity);
+          }
+        }
       }
     }
 
-    if (!effectiveBuyPrice) return;
+    if (!effectiveBuyPrice || effectiveBuyPrice <= 0) return;
 
     let actualBuyCost = effectiveBuyPrice;
     let buyCommission = 0;
@@ -184,16 +234,27 @@ function calculateFlippingOpportunities() {
       [...allRoyalCities, 'blackMarket'].forEach(city => {
         const cityData = item[city];
         if (!cityData) return;
-        const priceToCheck = state.flipSettings.sellMethod === 'order' ? cityData.sell : cityData.buy;
-        if (priceToCheck !== null && priceToCheck > maxPrice) { maxPrice = priceToCheck; bestCity = city; }
+        const priceToCheck = state.flipSettings.sellMethod === 'order' 
+          ? (cityData.sell !== null && cityData.sell > 0 ? cityData.sell : null) 
+          : (cityData.buy !== null && cityData.buy > 0 ? cityData.buy : null);
+        if (priceToCheck !== null && priceToCheck > 0 && priceToCheck > maxPrice) { maxPrice = priceToCheck; bestCity = city; }
       });
-      if (maxPrice !== -Infinity) { sellPrice = maxPrice; sellCityName = getCityDisplayName(bestCity); actualSellCityKey = bestCity; }
+      if (maxPrice !== -Infinity && maxPrice > 0) { sellPrice = maxPrice; sellCityName = getCityDisplayName(bestCity); actualSellCityKey = bestCity; }
     } else {
       const cityData = item[state.flipSettings.sellCity];
-      if (cityData) { sellPrice = state.flipSettings.sellMethod === 'order' ? cityData.sell : cityData.buy; sellCityName = getCityDisplayName(state.flipSettings.sellCity); actualSellCityKey = state.flipSettings.sellCity; }
+      if (cityData) { 
+        const p = state.flipSettings.sellMethod === 'order' 
+          ? (cityData.sell !== null && cityData.sell > 0 ? cityData.sell : null) 
+          : (cityData.buy !== null && cityData.buy > 0 ? cityData.buy : null);
+        if (p !== null && p > 0) {
+          sellPrice = p;
+          sellCityName = getCityDisplayName(state.flipSettings.sellCity);
+          actualSellCityKey = state.flipSettings.sellCity;
+        }
+      }
     }
 
-    if (!sellPrice) return;
+    if (!sellPrice || sellPrice <= 0) return;
 
     let grossSellRevenue = sellPrice;
     if (state.flipSettings.sellMethod === 'order') grossSellRevenue = sellPrice * (1 - orderFee);
@@ -247,12 +308,12 @@ function renderFlippingResults(results) {
   }
 
   let html = `
-    <table class="flipping-table">
-      <thead><tr>
-        <th>Предмет</th><th>Покупка</th><th></th><th>Продажа</th>
-        <th class="profit-col sortable-flip" id="flipSortHeader"><span class="sort-label">Прибыль (%)</span> <span class="sort-arrow"></span></th>
-        <th class="action-col">Действия</th>
-      </tr></thead><tbody>`;
+      <table class="flipping-table">
+        <thead><tr>
+          <th>Предмет</th><th>Покупка</th><th></th><th>Продажа</th>
+          <th class="profit-col sortable-flip" id="flipSortHeader"><span class="sort-label">Прибыль (%)</span> <span class="sort-arrow"></span></th>
+          <th>Действие</th>
+        </tr></thead><tbody>`;
 
   results.forEach(r => {
     html += `
@@ -277,7 +338,7 @@ function renderFlippingResults(results) {
         <td class="arrow-cell"><div style="font-size: 16px;">➜</div><div style="font-size: 10px; color: var(--text-secondary); margin-top: 4px;">${(r.salesPerDay !== undefined && r.salesPerDay !== null) ? r.salesPerDay : 0}/день</div></td>
         <td class="sell-cell"><div class="sell-city">${r.sellCity}</div><div class="sell-price">${formatPrice(r.netSellPrice)}</div><div class="sell-commission">-${formatPrice(r.commissionDeducted)}</div></td>
         <td class="profit-cell"><div class="profit-percent">${r.profitPercent}%</div><div class="clean-profit">+${formatPrice(r.cleanProfit)}</div></td>
-        <td class="action-cell"><button class="add-to-plan-btn" data-item-id="${r.itemId}" data-buy-city="${r.buyCity}" data-sell-city="${r.sellCity}">В план</button></td>
+        <td class="action-cell"><button class="add-to-plan-btn" data-item='${JSON.stringify(r).replace(/'/g, "&apos;")}'>В план</button></td>
       </tr>`;
   });
 

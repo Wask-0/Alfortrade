@@ -4,6 +4,7 @@ const { state, saveMarketState } = require('./js/store.js');
 const { processMarketData, renderTable, initMarketFilters, initSorting, updateSortUI, initMarketExportImport } = require('./js/market.js');
 const { calculateFlippingOpportunities, initFlippingFilters, updateFlipSortUI } = require('./js/flipping.js');
 const { renderMyOrdersTable, initMyOrdersListener } = require('./js/my-orders.js');
+const { addToPlanner, initPlanner, renderPlannerTable } = require('./js/planner.js');
 
 // ===== IPC СЛУШАТЕЛИ =====
 ipcRenderer.on('dictionary-loaded', (event, dictionary) => {
@@ -153,6 +154,7 @@ function initNavigation() {
                 targetPage.classList.add('active');
                 if (btn.dataset.page === 'my-orders') renderMyOrdersTable();
                 if (btn.dataset.page === 'flipping') calculateFlippingOpportunities();
+                if (btn.dataset.page === 'planner') renderPlannerTable();
             }
         });
     });
@@ -178,6 +180,18 @@ function initApp() {
     renderTable();
     calculateFlippingOpportunities();
     renderMyOrdersTable();
+
+    initPlanner();
+
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('add-to-plan-btn')) {
+            const itemData = JSON.parse(e.target.dataset.item.replace(/&apos;/g, "'"));
+            addToPlanner(itemData);
+            e.target.textContent = 'Добавлено ✓';
+            e.target.disabled = true;
+            e.target.style.opacity = '0.6';
+        }
+    });
 }
 
 // Запуск при готовности DOM

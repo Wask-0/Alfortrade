@@ -1336,3 +1336,59 @@ thead th.sticky-col-2::after {
 .export-btn .btn-icon, .import-btn .btn-icon {
   font-size: 14px;
 }
+
+/* ===== СТРАНИЦА ПЛАНИРОВЩИК ===== */
+#page-planner .container {
+  height: 100%;
+  padding: 20px 32px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ===== ЯЧЕЙКА СОСТОЯНИЯ ===== */
+.status-cell {
+  text-align: center;
+  vertical-align: middle;
+  padding: 8px 4px;
+}
+
+.status-text {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: var(--text-secondary);
+}
+
+.status-controls {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.status-btn {
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.status-btn:hover {
+  background-color: var(--accent-color);
+  color: #ffffff;
+  border-color: var(--accent-color);
+}
+
+/* Цветовая индикация состояний (опционально) */
+.status-text[data-status="planned"] { color: var(--text-secondary); }
+.status-text[data-status="buying"] { color: #3498db; }
+.status-text[data-status="selling"] { color: #f39c12; }
+.status-text[data-status="sold"] { color: #2ecc71; }

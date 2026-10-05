@@ -70,20 +70,62 @@ function parseTime(timeStr) {
 }
 
 function shouldUpdate(currentPrice, currentUpdated, newPrice, newUpdated, isSell) {
-  if (currentPrice === null || currentPrice === undefined) return true;
+  // Никогда не принимать нулевые или невалидные цены
+  if (newPrice === null || newPrice === undefined || newPrice <= 0) {
+    return false;
+  }
+  
+  // Если текущей цены нет - принять новую
+  if (currentPrice === null || currentPrice === undefined || currentPrice <= 0) {
+    return true;
+  }
+  
+  // Если нет времени обновления - принять
   if (!currentUpdated) return true;
+  
   const oldTime = parseTime(currentUpdated);
   const newTime = parseTime(newUpdated);
   const diffMinutes = (newTime - oldTime) / 60000;
-  if (diffMinutes >= 1) return true;
-  if (isSell && newPrice < currentPrice) return true;
-  if (!isSell && newPrice > currentPrice) return true;
+  
+  // Через 10 минут разрешить любое обновление (данные устарели)
+  if (diffMinutes >= 10) {
+    return true;
+  }
+  
+  // В течение 10 минут - обновлять только если цена лучше
+  if (isSell && newPrice < currentPrice) return true; // Для продажи - ниже лучше
+  if (!isSell && newPrice > currentPrice) return true; // Для покупки - выше лучше
+  
   return false;
+}
+
+function getDisplayBuyPrice(item, cityKey, marketState) {
+  const cityData = item[cityKey];
+  if (!cityData) return null;
+  
+  // Если есть прямая цена - вернуть её
+  if (cityData.buy && cityData.buy > 0) {
+    return cityData.buy;
+  }
+  
+  // Иначе - наследовать от более низкого качества
+  const lowerQuality = item.quality - 1;
+  if (lowerQuality < 1) return null; // Минимум качество 1
+  
+  const lowerKey = `${item.id}_${lowerQuality}`;
+  const lowerItem = marketState[lowerKey];
+  
+  if (lowerItem && lowerItem[cityKey] && lowerItem[cityKey].buy > 0) {
+    return lowerItem[cityKey].buy;
+  }
+  
+  return null;
 }
 
 module.exports = {
   qualityMap, locationMap, locationIdToName,
   getQualityName, getLocationName, getCityDisplayName,
   extractTier, extractEnchant, getDisplayName,
-  formatPrice, parseTime, shouldUpdate
+  formatPrice, parseTime, shouldUpdate,
+  getDisplayBuyPrice
 };
