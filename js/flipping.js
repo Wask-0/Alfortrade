@@ -148,7 +148,7 @@ function calculateFlippingOpportunities() {
         if (totalCraftCost < bestCraftCost) {
           bestCraftCost = totalCraftCost;
           const baseDictItem = state.itemsDict[baseId];
-          bestCraftDetails = { totalCost: totalCraftCost, baseCity: baseCityName, baseItemName: baseDictItem ? baseDictItem.name : item.name, basePrice: basePrice, baseCommission: baseCommission, materials: materialsList };
+          bestCraftDetails = { totalCost: totalCraftCost, baseCity: baseCityName, baseItemId: baseId, baseItemName: baseDictItem ? baseDictItem.name : item.name, basePrice: basePrice, baseCommission: baseCommission, materials: materialsList };
         }
       }
 
@@ -277,14 +277,17 @@ function calculateFlippingOpportunities() {
     if (profitPercent >= state.flipSettings.profitPercent && profit > 0) {
       let finalDisplayPrice = isCrafted && craftDetailsObj ? formatPrice(craftDetailsObj.totalCost) : formatPrice(actualBuyCost);
       results.push({
-        itemId: item.id, itemName: item.name, tier: itemTier, enchant: itemEnchant, quality: item.quality,
-        salesPerDay: getSalesForCity(item, state.flipSettings.sellCity === 'any' ? 'blackMarket' : state.flipSettings.sellCity),
-        buyCity: buyCityName, buyPriceDisplay: finalDisplayPrice,
-        buyCommissionDisplay: buyCommission > 0 ? `+${formatPrice(buyCommission)}` : '-',
-        sellCity: sellCityName, netSellPrice: Math.round(netSellRevenue),
-        commissionDeducted: Math.round(grossSellRevenue - netSellRevenue),
-        profitPercent: profitPercent.toFixed(1), cleanProfit: Math.round(profit),
-        isCrafted: isCrafted, craftDetailsObj: craftDetailsObj
+          itemId: item.id, itemName: item.name, tier: itemTier, enchant: itemEnchant, quality: item.quality,
+          salesPerDay: getSalesForCity(item, state.flipSettings.sellCity === 'any' ? 'blackMarket' : state.flipSettings.sellCity),
+          buyCity: buyCityName, buyPriceDisplay: finalDisplayPrice,
+          buyPriceRaw: isCrafted && craftDetailsObj ? craftDetailsObj.totalCost : actualBuyCost, 
+          buyCommissionDisplay: buyCommission > 0 ? `+${formatPrice(buyCommission)}` : '-',
+          sellCity: sellCityName, netSellPrice: Math.round(netSellRevenue),
+          commissionDeducted: Math.round(grossSellRevenue - netSellRevenue),
+          profitPercent: profitPercent.toFixed(1), cleanProfit: Math.round(profit),
+          isCrafted: isCrafted, craftDetailsObj: craftDetailsObj,
+          buyMethod: state.flipSettings.buyMethod,
+          sellMethod: state.flipSettings.sellMethod
       });
     }
   });
@@ -338,7 +341,12 @@ function renderFlippingResults(results) {
         <td class="arrow-cell"><div style="font-size: 16px;">➜</div><div style="font-size: 10px; color: var(--text-secondary); margin-top: 4px;">${(r.salesPerDay !== undefined && r.salesPerDay !== null) ? r.salesPerDay : 0}/день</div></td>
         <td class="sell-cell"><div class="sell-city">${r.sellCity}</div><div class="sell-price">${formatPrice(r.netSellPrice)}</div><div class="sell-commission">-${formatPrice(r.commissionDeducted)}</div></td>
         <td class="profit-cell"><div class="profit-percent">${r.profitPercent}%</div><div class="clean-profit">+${formatPrice(r.cleanProfit)}</div></td>
-        <td class="action-cell"><button class="add-to-plan-btn" data-item='${JSON.stringify(r).replace(/'/g, "&apos;")}'>В план</button></td>
+        <td class="action-cell">
+          <div class="quantity-input-wrapper">
+            <input type="number" class="quantity-input" value="1" min="1" data-item='${JSON.stringify(r).replace(/'/g, "&apos;")}'>
+            <button class="add-to-plan-btn" data-item='${JSON.stringify(r).replace(/'/g, "&apos;")}'>В план</button>
+          </div>
+        </td>
       </tr>`;
   });
 

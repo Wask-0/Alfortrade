@@ -184,14 +184,30 @@ function initApp() {
     initPlanner();
 
     document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('add-to-plan-btn')) {
-            const itemData = JSON.parse(e.target.dataset.item.replace(/&apos;/g, "'"));
-            addToPlanner(itemData);
-            e.target.textContent = 'Добавлено ✓';
-            e.target.disabled = true;
-            e.target.style.opacity = '0.6';
+    if (e.target.classList.contains('add-to-plan-btn')) {
+        const itemData = JSON.parse(e.target.dataset.item.replace(/&apos;/g, "'"));
+        
+        // Находим соседний input с количеством
+        const wrapper = e.target.closest('.quantity-input-wrapper');
+        const quantityInput = wrapper ? wrapper.querySelector('.quantity-input') : null;
+        const quantity = quantityInput ? parseInt(quantityInput.value) || 1 : 1;
+        
+        // Добавляем quantity в объект
+        itemData.quantity = quantity;
+        itemData.purchased = 0; // Уже куплено
+        
+        addToPlanner(itemData);
+        
+        // Визуальная обратная связь
+        e.target.textContent = 'Добавлено ✓';
+        e.target.disabled = true;
+        e.target.style.opacity = '0.6';
+        if (quantityInput) {
+            quantityInput.disabled = true;
+            quantityInput.style.opacity = '0.6';
         }
-    });
+    }
+});
 }
 
 // Запуск при готовности DOM

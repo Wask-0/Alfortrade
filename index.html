@@ -332,21 +332,80 @@
                       <option value="sold">Продано</option>
                   </select>
               </div>
+              <div class="filter-group">
+                <label for="planner-buy-city-filter">Город закупки</label>
+                <select id="planner-buy-city-filter">
+                    <option value="all">Все города</option>
+                    <option value="Black Market">Black Market</option>
+                    <option value="Caerleon">Caerleon</option>
+                    <option value="Bridgewatch">Bridgewatch</option>
+                    <option value="Lymhurst">Lymhurst</option>
+                    <option value="Fort Sterling">Fort Sterling</option>
+                    <option value="Thetford">Thetford</option>
+                    <option value="Martlock">Martlock</option>
+                    <option value="Brecilien">Brecilien</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="planner-sell-city-filter">Город продажи</label>
+                <select id="planner-sell-city-filter">
+                    <option value="all">Все города</option>
+                    <option value="Black Market">Black Market</option>
+                    <option value="Caerleon">Caerleon</option>
+                    <option value="Bridgewatch">Bridgewatch</option>
+                    <option value="Lymhurst">Lymhurst</option>
+                    <option value="Fort Sterling">Fort Sterling</option>
+                    <option value="Thetford">Thetford</option>
+                    <option value="Martlock">Martlock</option>
+                    <option value="Brecilien">Brecilien</option>
+                </select>
+            </div>
+            <div class="filter-group filter-group-buttons">
+                <button class="export-btn" id="openCraftSummaryBtn">Ресурсы для зачарования</button>
+            </div>
           </div>
           <div class="table-wrapper my-orders-table-wrapper">
               <table id="planner-table" class="market-table flipping-table">
                   <thead>
                       <tr>
-                          <th style="width: 25%;">Предмет</th>
-                          <th style="width: 15%;">Город покупки</th>
-                          <th style="width: 15%;">Цена покупки</th>
-                          <th style="width: 15%;">Город продажи</th>
-                          <th style="width: 15%;">Чистая продажа</th>
-                          <th style="width: 10%;">Прибыль</th>
-                          <th style="width: 15%;">Состояние</th>
+                          <th style="width: 17%;">Предмет</th>
+                          <th style="width: 8%;">Качество</th>
+                          <th style="width: 10%;">Город покупки</th>
+                          <th style="width: 10%;">Цена покупки</th>
+                          <th style="width: 10%;">Город продажи</th>
+                          <th style="width: 10%;">Чистая продажа</th>
+                          <th style="width: 9%;">Прибыль</th>
+                          <th style="width: 7%;">Количество</th>
+                          <th style="width: 7%;">Уже куплено</th>
+                          <th style="width: 10%;">Состояние</th>
+                          <th style="width: 5%;">Действие</th>
                       </tr>
                   </thead>
                   <tbody id="planner-body"></tbody>
+              </table>
+          </div>
+      </div>
+  </div>
+  <div class="modal-overlay" id="craftSummaryModal">
+      <div class="modal-window">
+          <div class="modal-header">
+              <span class="modal-title">Ресурсы для зачарования</span>
+              <button class="modal-close" id="closeCraftSummaryBtn">✕</button>
+          </div>
+          <div class="modal-body">
+              <table class="flipping-table" id="craftSummaryTable">
+                  <thead>
+                      <tr>
+                          <th>Ресурс</th>
+                          <th>Статус</th>
+                          <th>Город закупки</th>
+                          <th>Количество</th>
+                          <th>Цена за шт.</th>
+                          <th>Итого</th>
+                          <th>Для предмета</th>
+                      </tr>
+                  </thead>
+                  <tbody id="craftSummaryBody"></tbody>
               </table>
           </div>
       </div>

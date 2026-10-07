@@ -1387,8 +1387,225 @@ thead th.sticky-col-2::after {
   border-color: var(--accent-color);
 }
 
+.status-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.status-btn:disabled:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
 /* Цветовая индикация состояний (опционально) */
 .status-text[data-status="planned"] { color: var(--text-secondary); }
 .status-text[data-status="buying"] { color: #3498db; }
 .status-text[data-status="selling"] { color: #f39c12; }
 .status-text[data-status="sold"] { color: #2ecc71; }
+
+/* ===== ПОЛЕ ВВОДА КОЛИЧЕСТВА ВО ФЛИППИНГЕ ===== */
+.quantity-input-wrapper {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+.quantity-input {
+  width: 60px;
+  padding: 6px 8px;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 13px;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.quantity-input:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(88, 101, 242, 0.2);
+}
+
+.quantity-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Убираем стрелки у number input в Chrome/Safari */
+.quantity-input::-webkit-outer-spin-button,
+.quantity-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Убираем стрелки в Firefox */
+.quantity-input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* ===== СТОЛБЦЫ ПЛАНИРОВЩИКА ===== */
+.col-quantity {
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.col-purchased {
+  text-align: center;
+  font-weight: 600;
+  color: var(--accent-color);
+  font-size: 14px;
+}
+
+/* ===== КНОПКА УДАЛЕНИЯ ИЗ ПЛАНА ===== */
+.action-cell {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.remove-from-plan-btn {
+  background-color: #e74c3c;
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  display: inline-block;
+  transition: all 0.2s ease;
+}
+
+.remove-from-plan-btn:hover {
+  background-color: #c0392b;
+}
+
+.remove-from-plan-btn:active {
+  transform: scale(0.97);
+}
+
+/* Светлая тема */
+[data-theme="light"] .remove-from-plan-btn {
+  background-color: #d63031;
+}
+
+[data-theme="light"] .remove-from-plan-btn:hover {
+  background-color: #b71c1c;
+}
+
+/* ===== СПОСОБ СДЕЛКИ ПОД ГОРОДОМ (ПЛАНИРОВЩИК) ===== */
+.method-label {
+  font-size: 10px;
+  opacity: 0.6;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* ===== ИТОГОВЫЕ ЗНАЧЕНИЯ (ЦЕНА × КОЛИЧЕСТВО) ===== */
+.total-label {
+  font-size: 10px;
+  opacity: 0.7;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* ===== МОДАЛЬНОЕ ОКНО (РЕСУРСЫ ДЛЯ ЗАЧАРОВАНИЯ) ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-overlay.open {
+  display: flex;
+}
+
+.modal-window {
+  width: 850px;
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px var(--shadow);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 16px;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.modal-close:hover {
+  background-color: var(--bg-hover);
+}
+
+.modal-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+/* ===== ПОМЕТКИ СТАТУСОВ В СВОДКЕ РЕСУРСОВ ===== */
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-badge.planned {
+  background: rgba(88, 101, 242, 0.15);
+  color: #7986ff;
+  border: 1px solid rgba(88, 101, 242, 0.4);
+}
+
+.status-badge.buying {
+  background: rgba(52, 152, 219, 0.15);
+  color: #4aa3e8;
+  border: 1px solid rgba(52, 152, 219, 0.4);
+}
+
+[data-theme="light"] .status-badge.planned {
+  color: #3d47c4;
+}
+
+[data-theme="light"] .status-badge.buying {
+  color: #1b6ca8;
+}
