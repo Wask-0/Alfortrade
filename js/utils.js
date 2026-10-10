@@ -21,6 +21,8 @@ const locationIdToName = {
   "3008": "Martlock", "5003": "Brecilien"
 };
 
+const PRICE_STEP = 10000;
+
 function getQualityName(q) {
   return qualityMap[q] || 'Неизвестно';
 }
@@ -103,20 +105,21 @@ function getDisplayBuyPrice(item, cityKey, marketState) {
   const cityData = item[cityKey];
   if (!cityData) return null;
   
-  // Если есть прямая цена - вернуть её
-  if (cityData.buy && cityData.buy > 0) {
+  // Прямая книга — показываем реальный верх чужих ордеров
+  if (cityData.buy !== null && cityData.buy > 0) {
     return cityData.buy;
   }
   
-  // Иначе - наследовать от более низкого качества
+  // Книги нет — наследуем от нижнего качества + 1 серебро,
+  // чтобы наш ордер перебивал верх нижней книги
   const lowerQuality = item.quality - 1;
-  if (lowerQuality < 1) return null; // Минимум качество 1
+  if (lowerQuality < 1) return null;
   
   const lowerKey = `${item.id}_${lowerQuality}`;
   const lowerItem = marketState[lowerKey];
   
   if (lowerItem && lowerItem[cityKey] && lowerItem[cityKey].buy > 0) {
-    return lowerItem[cityKey].buy;
+    return lowerItem[cityKey].buy + PRICE_STEP; // ← +1 НАСЛЕДОВАНИЕ
   }
   
   return null;
@@ -127,5 +130,5 @@ module.exports = {
   getQualityName, getLocationName, getCityDisplayName,
   extractTier, extractEnchant, getDisplayName,
   formatPrice, parseTime, shouldUpdate,
-  getDisplayBuyPrice
+  getDisplayBuyPrice, PRICE_STEP
 };

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Выбор областей</title>
+<style>
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; }
+  #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); cursor: crosshair; user-select: none; }
+
+  .area-box { position: absolute; border: 2px solid #6c7bff; background: rgba(108,123,255,0.15); box-sizing: border-box; cursor: move; }
+  .area-box.selected { border-color: #2ecc71; background: rgba(46,204,113,0.15); }
+  .area-title { position: absolute; top: -22px; left: -2px; padding: 2px 6px; font: 12px/16px sans-serif; color: #fff; background: #6c7bff; border-radius: 2px; white-space: nowrap; pointer-events: none; }
+  .area-box.selected .area-title { background: #2ecc71; }
+  .area-resize { position: absolute; right: -5px; bottom: -5px; width: 10px; height: 10px; background: #6c7bff; border-radius: 2px; cursor: nwse-resize; }
+
+  #drawBox { position: absolute; border: 2px dashed #f39c12; background: rgba(243,156,18,0.15); box-sizing: border-box; display: none; pointer-events: none; }
+  #sizeLabel { position: absolute; padding: 2px 6px; font: 12px sans-serif; color: #fff; background: #f39c12; border-radius: 2px; display: none; pointer-events: none; white-space: nowrap; }
+
+  #toolbar {
+    position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 10px; align-items: center;
+    padding: 8px 12px; background: rgba(20,20,20,0.9);
+    border: 1px solid #444; border-radius: 8px;
+    font: 13px sans-serif; color: #eee; cursor: default;
+  }
+  #toolbar button { padding: 6px 14px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; background: #6c7bff; color: #fff; }
+  #toolbar button:hover { filter: brightness(1.15); }
+  #toolbar button.save { background: #2ecc71; }
+  #toolbar button.close { background: #e74c3c; }
+  #hint { opacity: 0.7; }
+</style>
+</head>
+<body>
+<div id="overlay">
+  <div id="drawBox"></div>
+  <div id="sizeLabel"></div>
+  <div id="toolbar">
+    <span id="hint">ЛКМ — нарисовать · тянуть — переместить · уголок — размер · DblClick — имя · Del — удалить · Esc — выход</span>
+    <button class="save" id="saveBtn">Сохранить</button>
+    <button class="close" id="closeBtn">Завершить (Esc)</button>
+  </div>
+</div>
+<script src="js/areas-overlay.js"></script>
+</body>
+</html>

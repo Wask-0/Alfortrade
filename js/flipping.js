@@ -1,28 +1,41 @@
 // js/flipping.js
 const { state } = require('./store.js');
-const { getQualityName, getCityDisplayName, formatPrice, getDisplayName } = require('./utils.js');
+const { getQualityName, getCityDisplayName, formatPrice, getDisplayName, PRICE_STEP } = require('./utils.js');
+
+// Наша цена в заказе на покупку: верх чужих buy-ордеров + 1, чтобы наш был первым
+function getOrderBuyPrice(cityData) {
+  if (!cityData || cityData.buy === null || cityData.buy <= 0) return null;
+  return cityData.buy + PRICE_STEP;
+}
+
+// Наша цена в заказе на продажу: низ чужих sell-ордеров - 1, чтобы наш был первым
+function getOrderSellPrice(cityData) {
+  if (!cityData || cityData.sell === null || cityData.sell <= 0) return null;
+  return cityData.sell - PRICE_STEP;
+}
+
+// Мгновенные сделки — без корректировки
+function getInstantBuyPrice(cityData) {  // покупаем по низу sell-ордеров
+  if (!cityData || cityData.sell === null || cityData.sell <= 0) return null;
+  return cityData.sell;
+}
+function getInstantSellPrice(cityData) { // продаём по верху buy-ордеров
+  if (!cityData || cityData.buy === null || cityData.buy <= 0) return null;
+  return cityData.buy;
+}
 
 // Универсальная функция наследования цены от нижнего качества
 function getFallbackBuyPrice(item, cityKey) {
-  const cityData = item[cityKey];
+  // Прямая книга: наш ордер = верх + 1
+  const direct = getOrderBuyPrice(item[cityKey]);
+  if (direct !== null) return direct;
   
-  // Если есть прямая цена > 0 — возвращаем её
-  if (cityData && cityData.buy !== null && cityData.buy > 0) {
-    return cityData.buy;
-  }
-  
-  // Иначе — наследуем от более низкого качества
+  // Книги нет — наследуем от нижнего качества, тоже +1, чтобы перебивать его верх
   const lowerQuality = item.quality - 1;
   if (lowerQuality < 1) return null;
-  
-  const lowerKey = `${item.id}_${lowerQuality}`;
-  const lowerItem = state.marketState[lowerKey];
-  
-  if (lowerItem && lowerItem[cityKey] && lowerItem[cityKey].buy > 0) {
-    return lowerItem[cityKey].buy;
-  }
-  
-  return null;
+  const lowerItem = state.marketState[`${item.id}_${lowerQuality}`];
+  if (!lowerItem) return null;
+  return getOrderBuyPrice(lowerItem[cityKey]);
 }
 
 function getSalesForCity(item, cityKey) {
@@ -128,9 +141,9 @@ function calculateFlippingOpportunities() {
             resourceCities.forEach(city => {
               const cd = matMarketItem[city];
               if (!cd) return;
-              const p = state.flipSettings.enchantBuyMethod === 'order' 
-                ? (cd.buy !== null && cd.buy > 0 ? cd.buy : null) 
-                : (cd.sell !== null && cd.sell > 0 ? cd.sell : null);
+              const p = state.flipSettings.enchantBuyMethod === 'order'
+                ? getOrderBuyPrice(cd)
+                : getInstantBuyPrice(cd);
               if (p !== null && p > 0 && p < minMatPrice) { minMatPrice = p; matCityName = getCityDisplayName(city); }
             });
             if (minMatPrice !== Infinity && minMatPrice > 0) matPrice = minMatPrice;
@@ -234,18 +247,18 @@ function calculateFlippingOpportunities() {
       [...allRoyalCities, 'blackMarket'].forEach(city => {
         const cityData = item[city];
         if (!cityData) return;
-        const priceToCheck = state.flipSettings.sellMethod === 'order' 
-          ? (cityData.sell !== null && cityData.sell > 0 ? cityData.sell : null) 
-          : (cityData.buy !== null && cityData.buy > 0 ? cityData.buy : null);
+        const priceToCheck = state.flipSettings.sellMethod === 'order'
+          ? getOrderSellPrice(cityData)
+          : getInstantSellPrice(cityData);
         if (priceToCheck !== null && priceToCheck > 0 && priceToCheck > maxPrice) { maxPrice = priceToCheck; bestCity = city; }
       });
       if (maxPrice !== -Infinity && maxPrice > 0) { sellPrice = maxPrice; sellCityName = getCityDisplayName(bestCity); actualSellCityKey = bestCity; }
     } else {
       const cityData = item[state.flipSettings.sellCity];
       if (cityData) { 
-        const p = state.flipSettings.sellMethod === 'order' 
-          ? (cityData.sell !== null && cityData.sell > 0 ? cityData.sell : null) 
-          : (cityData.buy !== null && cityData.buy > 0 ? cityData.buy : null);
+        const p = state.flipSettings.sellMethod === 'order'
+          ? getOrderSellPrice(cityData)
+          : getInstantSellPrice(cityData);
         if (p !== null && p > 0) {
           sellPrice = p;
           sellCityName = getCityDisplayName(state.flipSettings.sellCity);

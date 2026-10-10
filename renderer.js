@@ -5,6 +5,7 @@ const { processMarketData, renderTable, initMarketFilters, initSorting, updateSo
 const { calculateFlippingOpportunities, initFlippingFilters, updateFlipSortUI } = require('./js/flipping.js');
 const { renderMyOrdersTable, initMyOrdersListener } = require('./js/my-orders.js');
 const { addToPlanner, initPlanner, renderPlannerTable } = require('./js/planner.js');
+const { initBots } = require('./js/bots.js');
 
 // ===== IPC СЛУШАТЕЛИ =====
 ipcRenderer.on('dictionary-loaded', (event, dictionary) => {
@@ -182,6 +183,7 @@ function initApp() {
     renderMyOrdersTable();
 
     initPlanner();
+    initBots();
 
     document.addEventListener('click', (e) => {
     if (e.target.classList.contains('add-to-plan-btn')) {

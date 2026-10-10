@@ -26,6 +26,7 @@
     <button class="nav-btn" data-page="flipping">Флиппинг</button>
     <button class="nav-btn" data-page="my-orders">Мои Ордера</button>
     <button class="nav-btn" data-page="planner">Планировщик</button>
+    <button class="nav-btn" data-page="bots">Боты</button>
   </div>
 
 
@@ -409,6 +410,20 @@
               </table>
           </div>
       </div>
+  </div>
+  <div id="page-bots" class="page">
+    <div class="filter-panel">
+      <div class="filter-group filter-group-buttons">
+        <button class="export-btn" id="editAreasBtn">Редактирование областей</button>
+      </div>
+    </div>
+    <div id="bots-container" class="bots-container">
+    <div class="bot-row">
+        <span class="bot-name">Тестовый бот</span>
+        <span class="bot-status inactive" id="testBotStatus">Остановлен</span>
+        <button class="bot-btn start" id="testBotStart">Запустить</button>
+      </div>
+    </div>
   </div>
   <script src="renderer.js"></script>
 </body>

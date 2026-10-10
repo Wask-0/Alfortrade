@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; font-family: "Segoe UI", sans-serif; }
+  #wrap {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  #num {
+    font-size: 200px; font-weight: 800; color: #fff;
+    text-shadow: 0 0 50px rgba(108, 123, 255, 0.95);
+    animation: pulse 1s infinite;
+  }
+  #label {
+    font-size: 22px; color: #eee;
+    background: rgba(20, 20, 20, 0.75);
+    border: 1px solid #555; border-radius: 8px;
+    padding: 8px 18px;
+  }
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="num">3</div>
+  <div id="label">Тестовый бот начнёт работать через...</div>
+</div>
+<script>
+  let n = 3;
+  const num = document.getElementById('num');
+  const label = document.getElementById('label');
+  setInterval(() => {
+    n--;
+    if (n > 0) {
+      num.textContent = n;
+      num.style.animation = 'none';
+      void num.offsetWidth;      // перезапуск анимации
+      num.style.animation = '';
+    } else if (n === 0) {
+      num.textContent = 'Старт!';
+      num.style.color = '#2ecc71';
+      label.textContent = 'Работаю...';
+    }
+  }, 1000);
+</script>
+</body>
+</html>

@@ -1609,3 +1609,104 @@ thead th.sticky-col-2::after {
 [data-theme="light"] .status-badge.buying {
   color: #1b6ca8;
 }
+
+/* Стили для страницы Боты */
+#page-bots .bot-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 12px 15px;
+  margin-bottom: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+#page-bots .bot-row:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-color);
+}
+
+#page-bots .bot-name {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+#page-bots .bot-status {
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+#page-bots .bot-status.active {
+  background: rgba(46, 204, 113, 0.2);
+  color: #2ecc71;
+}
+
+#page-bots .bot-status.inactive {
+  background: rgba(231, 76, 60, 0.2);
+  color: #e74c3c;
+}
+
+#page-bots .bot-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+#page-bots .bot-btn.start {
+  background: #2ecc71;
+  color: white;
+}
+
+#page-bots .bot-btn.start:hover {
+  background: #27ae60;
+}
+
+#page-bots .bot-btn.stop {
+  background: #e74c3c;
+  color: white;
+}
+
+#page-bots .bot-btn.stop:hover {
+  background: #c0392b;
+}
+
+/* ===== Страница "Боты" ===== */
+.bots-container {
+  padding: 20px;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bots-empty {
+  margin: auto;
+  color: var(--text-primary);
+  opacity: 0.5;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* ===== Страница "Боты": отступы как у остальных страниц ===== */
+#page-bots {
+  padding: 30px 33px;
+  box-sizing: border-box;
+}
+
+#page-bots .filter-panel {
+  margin: 0 0 23px 0;
+}
+
+#page-bots .table-wrapper {
+  margin: 0;
+  width: 100%;
+}
+
