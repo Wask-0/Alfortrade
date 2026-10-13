@@ -4,10 +4,14 @@
   "description": "Albion Online market price tracker",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "rebuild": "electron-rebuild -f -w vigem_input --module-dir=native/vigem-input"
   },
-  "dependencies": {},
+  "dependencies": {
+    "node-addon-api": "^8.9.2"
+  },
   "devDependencies": {
+    "@electron/rebuild": "^4.2.1",
     "electron": "^28.0.0"
   }
 }

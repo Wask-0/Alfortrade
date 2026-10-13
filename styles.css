@@ -1710,3 +1710,54 @@ thead th.sticky-col-2::after {
   width: 100%;
 }
 
+/* ===== КНОПКИ УПРАВЛЕНИЯ БОТОМ (ПАУЗА / СТОП) ===== */
+#page-bots .bot-btn.pause {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+#page-bots .bot-btn.pause:hover:not(:disabled) {
+  background: #f39c12; /* Оранжевый для паузы */
+  color: #fff;
+  border-color: #f39c12;
+}
+
+/* Когда бот на паузе, кнопка горит оранжевым */
+#page-bots .bot-btn.pause.active-pause {
+  background: #f39c12;
+  color: #fff;
+  border-color: #f39c12;
+  box-shadow: 0 0 10px rgba(243, 156, 18, 0.4);
+}
+
+#page-bots .bot-btn.stop {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+#page-bots .bot-btn.stop:hover:not(:disabled) {
+  background: #e74c3c; /* Красный для стопа */
+  color: #fff;
+  border-color: #e74c3c;
+}
+
+/* Отключенное состояние для кнопок паузы и стопа */
+#page-bots .bot-btn.pause:disabled,
+#page-bots .bot-btn.stop:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  box-shadow: none;
+}
+
+/* Подсказка по хоткеям в статусе */
+.hotkey-hint {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-left: 8px;
+  font-weight: normal;
+}
