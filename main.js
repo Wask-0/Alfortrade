@@ -8,31 +8,25 @@ let mainWindow;
 let backendProcess = null;
 let backendRunning = false;
 
-let botRunning = false;
-let botPaused = false;
-let botStopRequested = false;
-let resumeCallback = null;
+// Состояние для мульти-бота
+let botsRuntimeState = {};
 
-// ===== НАТИВНЫЙ ВВОД (SendInput через C++) =====
+// ===== НАТИВНЫЙ ВВОД =====
 let humanInput = null;
 try {
     humanInput = require('./native/vigem-input/build/Release/human_input.node');
     console.log('[Main] human_input загружен');
 } catch (e) {
-    console.error('[Main] Не удалось загрузить human_input:', e.message);
+    console.error('[Main] ОШИБКА: human_input не найден! Боты не будут работать.');
 }
 
-// ===== ЛОКАЛЬНЫЙ СЕРВЕР ДЛЯ ПРИЕМА ДАННЫХ ОТ GO =====
+// ===== ЛОКАЛЬНЫЙ СЕРВЕР =====
 const server = http.createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    if (req.method === 'OPTIONS') {
-        res.writeHead(200);
-        res.end();
-        return;
-    }
+    if (req.method === 'OPTIONS') { res.writeHead(200); res.end(); return; }
 
     if (req.method === 'POST' && req.url === '/market-update') {
         let body = '';
@@ -40,15 +34,10 @@ const server = http.createServer((req, res) => {
         req.on('end', () => {
             try {
                 const data = JSON.parse(body);
-                if (mainWindow) {
-                    mainWindow.webContents.send('market-data-received', data);
-                }
+                if (mainWindow) mainWindow.webContents.send('market-data-received', data);
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ status: 'ok' }));
-            } catch (e) {
-                res.writeHead(400);
-                res.end('Invalid JSON');
-            }
+            } catch (e) { res.writeHead(400); res.end('Invalid JSON'); }
         });
     } else if (req.method === 'POST' && req.url === '/status') {
         let body = '';
@@ -62,10 +51,7 @@ const server = http.createServer((req, res) => {
                 }
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ status: 'ok' }));
-            } catch (e) {
-                res.writeHead(400);
-                res.end('Invalid JSON');
-            }
+            } catch (e) { res.writeHead(400); res.end('Invalid JSON'); }
         });
     } else if (req.method === 'POST' && req.url === '/my-order-update') {
         let body = '';
@@ -73,53 +59,30 @@ const server = http.createServer((req, res) => {
         req.on('end', () => {
             try {
                 const data = JSON.parse(body);
-                console.log('[Main] Получен личный ордер:', data.itemId);
-                if (mainWindow) {
-                    mainWindow.webContents.send('my-order-data-received', data);
-                }
+                if (mainWindow) mainWindow.webContents.send('my-order-data-received', data);
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ status: 'ok' }));
-            } catch (e) {
-                console.error('[Main] Ошибка парсинга ордера:', e);
-                res.writeHead(400);
-                res.end('Invalid JSON');
-            }
+            } catch (e) { res.writeHead(400); res.end('Invalid JSON'); }
         });
     } else {
-        res.writeHead(404);
-        res.end();
+        res.writeHead(404); res.end();
     }
 });
 
-server.listen(3000, '127.0.0.1', () => {
-    console.log('Локальный сервер запущен на порту 3000');
-});
+server.listen(3000, '127.0.0.1', () => console.log('Сервер на порту 3000'));
 
 function createWindow() {
     mainWindow = new BrowserWindow({
-        width: 1400,
-        height: 800,
-        frame: false,
-        backgroundColor: '#0c0c0c',
-        webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false
-        }
+        width: 1400, height: 800, frame: false, backgroundColor: '#0c0c0c',
+        webPreferences: { nodeIntegration: true, contextIsolation: false }
     });
 
-    // Загружаем словарь предметов
     let itemsDictionary = {};
     try {
-        const dictPath = path.join(__dirname, 'items-dictionary.json');
-        const rawData = fs.readFileSync(dictPath, 'utf-8');
-        itemsDictionary = JSON.parse(rawData);
-        console.log(`[Main] Словарь предметов загружен: ${Object.keys(itemsDictionary).length} записей`);
-    } catch (e) {
-        console.warn('[Main] Не удалось загрузить items-dictionary.json:', e.message);
-    }
+        itemsDictionary = JSON.parse(fs.readFileSync(path.join(__dirname, 'items-dictionary.json'), 'utf-8'));
+    } catch (e) { console.warn('Нет словаря предметов'); }
 
     mainWindow.loadFile('index.html');
-
     mainWindow.webContents.on('did-finish-load', () => {
         mainWindow.webContents.send('dictionary-loaded', itemsDictionary);
     });
@@ -128,326 +91,161 @@ function createWindow() {
 app.whenReady().then(() => {
     createWindow();
 
-    // Глобальный хоткей F9: Пауза / Продолжить
+    // F9: Пауза / Продолжить (для всех активных ботов)
     globalShortcut.register('F9', () => {
-        if (!botRunning) return;
-        if (botPaused) {
-            botPaused = false;
-            if (resumeCallback) {
-                resumeCallback();
-                resumeCallback = null;
+        for (const [botId, state] of Object.entries(botsRuntimeState)) {
+            if (state.running) {
+                if (state.paused) {
+                    state.paused = false;
+                    if (state.resumeCallback) { state.resumeCallback(); state.resumeCallback = null; }
+                    sendBotStatus(botId, '▶ Продолжение (F9)', true, false);
+                } else {
+                    state.paused = true;
+                    sendBotStatus(botId, '⏸ ПАУЗА (F9)', true, true);
+                }
             }
-            sendBotStatus('▶ Продолжение (F9)', true, false);
-        } else {
-            botPaused = true;
-            sendBotStatus('⏸ ПАУЗА (F9)', true, true);
         }
     });
 
-    // Глобальный хоткей F10: Экстренная остановка
+    // F10: Стоп (для всех активных ботов)
     globalShortcut.register('F10', () => {
-        if (botRunning) {
-            botStopRequested = true;
-            botPaused = false;
-            if (resumeCallback) {
-                resumeCallback();
-                resumeCallback = null;
+        for (const [botId, state] of Object.entries(botsRuntimeState)) {
+            if (state.running) {
+                state.stopRequested = true;
+                state.paused = false;
+                if (state.resumeCallback) { state.resumeCallback(); state.resumeCallback = null; }
             }
-            sendBotStatus('🛑 СТОП (F10)', false, false);
         }
     });
 });
 
-// Не забываем снимать хоткеи при закрытии приложения, чтобы не ломать ОС
-app.on('will-quit', () => {
-    globalShortcut.unregisterAll();
-});
+app.on('will-quit', () => globalShortcut.unregisterAll());
 
 app.on('window-all-closed', () => {
-    if (backendProcess) {
-        backendProcess.kill();
-    }
+    if (backendProcess) backendProcess.kill();
     server.close();
     if (process.platform !== 'darwin') app.quit();
 });
 
-app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-        createWindow();
-    }
-});
+app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 
-// ===== УПРАВЛЕНИЕ БЭКЕНДОМ =====
+// ===== БЭКЕНД =====
 ipcMain.on('start-backend', () => {
     if (backendRunning) return;
-
     const backendPath = path.join(__dirname, 'albion-bridge.exe');
-    const powershell = spawn('powershell.exe', [
-        '-Command',
-        `Start-Process -FilePath "${backendPath}" -Verb RunAs -WindowStyle Hidden`
-    ]);
-
-    powershell.on('close', (code) => {
-        if (code === 0) {
-            backendRunning = true;
-            if (mainWindow) {
-                mainWindow.webContents.send('backend-status', {
-                    running: true,
-                    encrypted: false
-                });
-            }
-        } else {
-            if (mainWindow) {
-                mainWindow.webContents.send('backend-error', 'Не удалось запустить бэкенд. Проверьте, что файл albion-bridge.exe находится в папке приложения.');
-            }
-        }
+    const ps = spawn('powershell.exe', ['-Command', `Start-Process -FilePath "${backendPath}" -Verb RunAs -WindowStyle Hidden`]);
+    ps.on('close', (code) => {
+        backendRunning = (code === 0);
+        if (mainWindow) mainWindow.webContents.send('backend-status', { running: backendRunning, encrypted: false });
+        if (code !== 0 && mainWindow) mainWindow.webContents.send('backend-error', 'Ошибка запуска бэкенда');
     });
-
-    backendProcess = powershell;
+    backendProcess = ps;
 });
 
 ipcMain.on('stop-backend', () => {
     if (backendProcess) {
-        const killProcess = spawn('taskkill', ['/F', '/IM', 'albion-bridge.exe']);
-        killProcess.on('close', () => {
-            backendRunning = false;
-            backendProcess = null;
-            if (mainWindow) {
-                mainWindow.webContents.send('backend-status', {
-                    running: false,
-                    encrypted: false
-                });
-            }
+        spawn('taskkill', ['/F', '/IM', 'albion-bridge.exe']).on('close', () => {
+            backendRunning = false; backendProcess = null;
+            if (mainWindow) mainWindow.webContents.send('backend-status', { running: false, encrypted: false });
         });
     }
 });
 
-// ===== УПРАВЛЕНИЕ ОКНОМ =====
-ipcMain.on('window-minimize', () => {
-    mainWindow.minimize();
-});
-
-ipcMain.on('window-maximize', () => {
-    if (mainWindow.isMaximized()) {
-        mainWindow.unmaximize();
-    } else {
-        mainWindow.maximize();
-    }
-});
-
+// ===== ОКНО =====
+ipcMain.on('window-minimize', () => mainWindow.minimize());
+ipcMain.on('window-maximize', () => mainWindow.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize());
 ipcMain.on('window-close', () => {
-    if (backendProcess) {
-        backendProcess.kill();
-    }
-    areaOverlays.forEach(w => w.close());
-    areaOverlays = [];
+    if (backendProcess) backendProcess.kill();
+    areaOverlays.forEach(w => w.close()); areaOverlays = [];
     mainWindow.close();
 });
 
-// ===== ЭКСПОРТ И ИМПОРТ ДАННЫХ РЫНКА =====
+// ===== ЭКСПОРТ / ИМПОРТ =====
 const { dialog } = require('electron');
-
 ipcMain.on('export-market-data', async (event, marketData) => {
     try {
         const now = new Date();
-        const day = String(now.getDate()).padStart(2, '0');
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const dateSuffix = `${day}.${month}`;
-
         const result = await dialog.showSaveDialog(mainWindow, {
-            title: 'Экспорт данных рынка',
-            defaultPath: path.join(__dirname, `market-data_${dateSuffix}.json`),
-            filters: [
-                { name: 'JSON файлы', extensions: ['json'] },
-                { name: 'Все файлы', extensions: ['*'] }
-            ]
+            defaultPath: path.join(__dirname, `market-data_${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.json`),
+            filters: [{ name: 'JSON', extensions: ['json'] }]
         });
-
         if (!result.canceled && result.filePath) {
-            const jsonData = JSON.stringify(marketData, null, 2);
-            fs.writeFileSync(result.filePath, jsonData, 'utf-8');
-            event.reply('market-data-exported', true, 'Данные успешно сохранены');
+            fs.writeFileSync(result.filePath, JSON.stringify(marketData, null, 2), 'utf-8');
+            event.reply('market-data-exported', true);
         }
-    } catch (error) {
-        console.error('Ошибка экспорта:', error);
-        event.reply('market-data-exported', false, error.message);
-    }
+    } catch (e) { event.reply('market-data-exported', false, e.message); }
 });
 
 ipcMain.on('import-market-data', async (event) => {
     try {
-        const result = await dialog.showOpenDialog(mainWindow, {
-            title: 'Импорт данных рынка',
-            filters: [
-                { name: 'JSON файлы', extensions: ['json'] },
-                { name: 'Все файлы', extensions: ['*'] }
-            ],
-            properties: ['openFile']
-        });
-
+        const result = await dialog.showOpenDialog(mainWindow, { filters: [{ name: 'JSON', extensions: ['json'] }], properties: ['openFile'] });
         if (!result.canceled && result.filePaths.length > 0) {
-            const filePath = result.filePaths[0];
-            const fileContent = fs.readFileSync(filePath, 'utf-8');
-            const importedData = JSON.parse(fileContent);
-            event.reply('market-data-imported', importedData);
+            event.reply('market-data-imported', JSON.parse(fs.readFileSync(result.filePaths[0], 'utf-8')));
         }
-    } catch (error) {
-        console.error('Ошибка импорта:', error);
-        dialog.showErrorBox('Ошибка импорта', error.message);
-    }
+    } catch (e) { dialog.showErrorBox('Ошибка', e.message); }
 });
 
-// ===== ЧТЕНИЕ/ЗАПИСЬ ОБЛАСТЕЙ В ФАЙЛ =====
+// ===== ОБЛАСТИ =====
 const AREAS_FILE = path.join(__dirname, 'bot-areas.json');
-
 ipcMain.handle('load-areas', async () => {
-    try {
-        if (fs.existsSync(AREAS_FILE)) {
-            return JSON.parse(fs.readFileSync(AREAS_FILE, 'utf-8'));
-        }
-    } catch (e) {
-        console.error('[Main] Ошибка чтения областей:', e);
-    }
-    return [];
+    try { return fs.existsSync(AREAS_FILE) ? JSON.parse(fs.readFileSync(AREAS_FILE, 'utf-8')) : []; } catch (e) { return []; }
 });
-
 ipcMain.handle('save-areas', async (event, areas) => {
-    try {
-        fs.writeFileSync(AREAS_FILE, JSON.stringify(areas, null, 2), 'utf-8');
-        return { ok: true };
-    } catch (e) {
-        console.error('[Main] Ошибка сохранения областей:', e);
-        return { ok: false, error: e.message };
-    }
+    try { fs.writeFileSync(AREAS_FILE, JSON.stringify(areas, null, 2), 'utf-8'); return { ok: true }; } catch (e) { return { ok: false, error: e.message }; }
 });
 
-// ===== ЭКРАННОЙ ОВЕРЛЕЙ ВЫБОРА ОБЛАСТЕЙ (ВСЕ МОНИТОРЫ) =====
+// ===== ОВЕРЛЕЙ ОБЛАСТЕЙ =====
 const { screen } = require('electron');
 let areaOverlays = [];
-
 ipcMain.on('open-areas-overlay', () => {
     if (areaOverlays.length) return;
-
     screen.getAllDisplays().forEach(display => {
         const b = display.bounds;
         const w = new BrowserWindow({
             x: b.x, y: b.y, width: b.width, height: b.height,
-            transparent: true,
-            frame: false,
-            resizable: false,
-            movable: false,
-            minimizable: false,
-            maximizable: false,
-            fullscreenable: false,
-            skipTaskbar: true,
-            hasShadow: false,
-            alwaysOnTop: true,
+            transparent: true, frame: false, alwaysOnTop: true, skipTaskbar: true, hasShadow: false,
             webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
-
         w.setAlwaysOnTop(true, 'screen-saver');
-        w.setVisibleOnAllWorkspaces(true);
         w.loadFile('areas-overlay.html');
-
         w.on('closed', () => {
             areaOverlays = areaOverlays.filter(x => x !== w);
-            if (areaOverlays.length === 0 && mainWindow && mainWindow.isMinimized()) {
-                mainWindow.restore();
-            }
+            if (areaOverlays.length === 0 && mainWindow?.isMinimized()) mainWindow.restore();
         });
-
         areaOverlays.push(w);
     });
-
     if (mainWindow) mainWindow.minimize();
 });
-
-ipcMain.on('close-areas-overlay', () => {
-    areaOverlays.forEach(w => w.close());
-    areaOverlays = [];
-});
-
+ipcMain.on('close-areas-overlay', () => { areaOverlays.forEach(w => w.close()); areaOverlays = []; });
 ipcMain.handle('get-display-bounds', (e) => {
     const win = areaOverlays.find(w => w.webContents.id === e.sender.id);
     const b = win ? win.getBounds() : screen.getPrimaryDisplay().bounds;
     return { x: b.x, y: b.y, width: b.width, height: b.height };
 });
-
 ipcMain.on('areas-sync', (e, areas) => {
-    areaOverlays.forEach(w => {
-        if (w.webContents.id !== e.sender.id) {
-            w.webContents.send('areas-sync', areas);
-        }
-    });
+    areaOverlays.forEach(w => { if (w.webContents.id !== e.sender.id) w.webContents.send('areas-sync', areas); });
 });
 
-// ===== БОТЫ =====
+// ===== БОТЫ (МУЛЬТИ-СИСТЕМА) =====
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
+const BOTS_CONFIG_FILE = path.join(__dirname, 'bots-config.json');
 const MOUSE_SPEED = 1300;
 
-const SEQUENCE_FILE = path.join(__dirname, 'bot-sequence.json');
-
-// Логнормальное распределение для таймингов
 function logNormal(mu, sigma) {
-    const u1 = Math.random();
-    const u2 = Math.random();
+    const u1 = Math.random(), u2 = Math.random();
     const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
     return Math.exp(mu + sigma * z);
 }
-
-function bezier(t, p0, p1, p2, p3) {
-    const u = 1 - t;
-    return u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3;
-}
-
-function smoothstep(t) {
-    return t * t * (3 - 2 * t);
-}
-
+function bezier(t, p0, p1, p2, p3) { const u = 1 - t; return u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3; }
+function smoothstep(t) { return t * t * (3 - 2 * t); }
 function randomPoint(a) {
     const m = 2;
-    return {
-        x: Math.round(a.x + m + Math.random() * Math.max(1, a.w - m * 2)),
-        y: Math.round(a.y + m + Math.random() * Math.max(1, a.h - m * 2))
-    };
+    return { x: Math.round(a.x + m + Math.random() * Math.max(1, a.w - m*2)), y: Math.round(a.y + m + Math.random() * Math.max(1, a.h - m*2)) };
 }
 
-// === ЯДРО УПРАВЛЕНИЯ СОСТОЯНИЕМ БОТА ===
-// Эта функция вызывается перед КАЖДЫМ шагом (движением, кликом, паузой)
-async function checkBotState() {
-    if (botStopRequested) {
-        throw new Error('BOT_STOPPED'); // Прерываем всё дерево вызовов
-    }
-    if (botPaused) {
-        sendBotStatus('⏸ ПАУЗА (Ожидание...)', true);
-        // Замораживаем выполнение до вызова resumeCallback
-        await new Promise(resolve => {
-            resumeCallback = resolve;
-        });
-        if (botStopRequested) throw new Error('BOT_STOPPED');
-        sendBotStatus('▶ Продолжение...', true);
-    }
-}
-
-// Обёртка над sleep, которая умеет прерываться стопом и ставиться на паузу
-async function interruptibleSleep(ms) {
-    const interval = 50; // Проверяем состояние каждые 50мс
-    let elapsed = 0;
-    while (elapsed < ms) {
-        await checkBotState();
-        if (botStopRequested) throw new Error('BOT_STOPPED');
-        
-        const step = Math.min(interval, ms - elapsed);
-        await sleep(step);
-        elapsed += step;
-    }
-}
-
-async function moveMouseTo(targetX, targetY, baseSpeed) {
+async function moveMouseTo(targetX, targetY, baseSpeed, checkStateFn, sleepFn) {
     if (!humanInput) return;
-    
-    await checkBotState(); // Проверка перед началом движения
+    await checkStateFn();
     
     const pos = humanInput.getCursorPos();
     let sx = pos.x, sy = pos.y;
@@ -459,209 +257,220 @@ async function moveMouseTo(targetX, targetY, baseSpeed) {
     const bow = dist * (0.08 + Math.random() * 0.14);
     const sign = Math.random() < 0.5 ? 1 : -1;
     const nx = -dy / dist, ny = dx / dist;
-    const c1x = sx + dx * 0.25 + nx * bow * sign;
-    const c1y = sy + dy * 0.25 + ny * bow * sign;
+    const c1x = sx + dx*0.25 + nx*bow*sign, c1y = sy + dy*0.25 + ny*bow*sign;
     const k = 0.4 + Math.random() * 0.6;
-    const c2x = sx + dx * 0.75 - nx * bow * sign * k;
-    const c2y = sy + dy * 0.75 - ny * bow * sign * k;
+    const c2x = sx + dx*0.75 - nx*bow*sign*k, c2y = sy + dy*0.75 - ny*bow*sign*k;
 
     const duration = (dist / speed) * 1000 * (0.85 + Math.random() * 0.35);
     const steps = Math.max(12, Math.floor(duration / 12));
     let lastX = sx, lastY = sy;
 
     for (let i = 1; i <= steps; i++) {
-        await checkBotState(); // Проверка на каждом шаге курсора!
+        await checkStateFn();
+        const e = smoothstep(i / steps);
+        let bx = bezier(e, sx, c1x, c2x, targetX) + (i < steps ? (Math.random()-0.5)*1.8 : 0);
+        let by = bezier(e, sy, c1y, c2y, targetY) + (i < steps ? (Math.random()-0.5)*1.8 : 0);
         
-        const t = i / steps;
-        const e = smoothstep(t);
-        let bx = bezier(e, sx, c1x, c2x, targetX);
-        let by = bezier(e, sy, c1y, c2y, targetY);
-        if (i < steps) {
-            bx += (Math.random() - 0.5) * 1.8;
-            by += (Math.random() - 0.5) * 1.8;
-        }
-        const mx = Math.round(bx - lastX);
-        const my = Math.round(by - lastY);
-        if (mx !== 0 || my !== 0) {
-            humanInput.moveRelative(mx, my);
-            lastX += mx;
-            lastY += my;
-        }
+        const mx = Math.round(bx - lastX), my = Math.round(by - lastY);
+        if (mx !== 0 || my !== 0) { humanInput.moveRelative(mx, my); lastX += mx; lastY += my; }
+        
         let delay = (duration / steps) * (0.6 + Math.random() * 0.8);
         if (Math.random() < 0.06) delay += 25 + Math.random() * 60;
-        
-        await interruptibleSleep(Math.max(1, delay)); // Прерываемый сон
+        await sleepFn(Math.max(1, delay));
     }
 
     if (Math.random() < 0.35) {
-        await checkBotState();
-        const ox = targetX + Math.round((Math.random() - 0.5) * 8);
-        const oy = targetY + Math.round((Math.random() - 0.5) * 8);
+        await checkStateFn();
         const cur = humanInput.getCursorPos();
-        humanInput.moveRelative(ox - cur.x, oy - cur.y);
-        await interruptibleSleep(40 + Math.random() * 70);
+        humanInput.moveRelative(targetX + (Math.random()-0.5)*8 - cur.x, targetY + (Math.random()-0.5)*8 - cur.y);
+        await sleepFn(40 + Math.random() * 70);
     }
 
-    await checkBotState();
+    await checkStateFn();
     const final = humanInput.getCursorPos();
     humanInput.moveRelative(targetX - final.x, targetY - final.y);
 }
 
-async function clickAt(x, y, baseSpeed) {
-    if (!humanInput) return;
-    await moveMouseTo(x, y, baseSpeed);
-    
-    await checkBotState();
-    const aimDelay = logNormal(Math.log(40), 0.4);
-    await interruptibleSleep(aimDelay);
-    
-    await checkBotState();
-    const holdTime = logNormal(Math.log(30), 0.3);
-    humanInput.mouseDown(0);
-    await interruptibleSleep(holdTime); // Даже зажатие кнопки можно прервать/поставить на паузу
-    humanInput.mouseUp(0);
-}
-
-function resolveSequence(sequenceData) {
-    const blocks = sequenceData.blocks;
+// Разворачивание последовательности КОНКРЕТНОГО бота
+function resolveBotSequence(botConfig) {
+    const macros = botConfig.macros || {};
     const visited = new Set();
-    function expand(blockName) {
-        if (visited.has(blockName)) throw new Error(`Циклическая ссылка в блоке "${blockName}"`);
-        visited.add(blockName);
-        const block = blocks[blockName];
-        if (!block) throw new Error(`Блок "${blockName}" не найден в bot-sequence.json`);
-        const result = [];
-        for (const item of block) {
-            if (typeof item === 'string' && item.startsWith('@')) {
-                result.push(...expand(item.slice(1)));
-            } else if (typeof item === 'number') {
-                result.push(item);
+    
+    function expand(item) {
+        // 1. Обычный клик (число)
+        if (typeof item === 'number') return [{ type: 'click', target: item }];
+        
+        // 2. Строковые команды (движение или макрос)
+        if (typeof item === 'string') {
+            // Движение: "m1" или "m1:500" (m = move, 1 = ID, 500 = wait ms)
+            if (item.startsWith('m')) {
+                const parts = item.slice(1).split(':');
+                const targetId = parseInt(parts[0], 10);
+                const waitTime = parts.length > 1 ? parseInt(parts[1], 10) : 0;
+                
+                if (isNaN(targetId)) throw new Error(`Ошибка в команде движения "${item}" у бота ${botConfig.name}`);
+                return [{ type: 'move', target: targetId, wait: waitTime }];
+            }
+            
+            // Ссылка на макрос: "@block1"
+            if (item.startsWith('@')) {
+                const name = item.slice(1);
+                if (visited.has(name)) throw new Error(`Циклическая ссылка в макросе "${name}"`);
+                visited.add(name);
+                if (!macros[name]) throw new Error(`Макрос "${name}" не найден у бота ${botConfig.name}`);
+                const result = macros[name].flatMap(expand);
+                visited.delete(name);
+                return result;
             }
         }
-        visited.delete(blockName);
-        return result;
+        
+        return [];
     }
-    return expand(sequenceData.entryPoint);
+    return botConfig.sequence.flatMap(expand);
 }
 
 function showCountdown(ms) {
     return new Promise(resolve => {
         const wins = screen.getAllDisplays().map(d => {
             const b = d.bounds;
-            const w = new BrowserWindow({
-                x: b.x, y: b.y, width: b.width, height: b.height,
-                transparent: true, frame: false, alwaysOnTop: true,
-                skipTaskbar: true, hasShadow: false,
-                resizable: false, movable: false, focusable: false,
-                webPreferences: { nodeIntegration: false, contextIsolation: true }
-            });
-            w.setAlwaysOnTop(true, 'screen-saver');
-            w.setIgnoreMouseEvents(true);
-            w.loadFile('countdown.html');
+            const w = new BrowserWindow({ x: b.x, y: b.y, width: b.width, height: b.height, transparent: true, frame: false, alwaysOnTop: true, skipTaskbar: true, focusable: false, webPreferences: { nodeIntegration: false, contextIsolation: true } });
+            w.setAlwaysOnTop(true, 'screen-saver'); w.setIgnoreMouseEvents(true); w.loadFile('countdown.html');
             return w;
         });
-        setTimeout(() => {
-            wins.forEach(w => { try { w.close(); } catch (e) {} });
-            resolve();
-        }, ms);
+        setTimeout(() => { wins.forEach(w => w.close()); resolve(); }, ms);
     });
 }
 
-function sendBotStatus(text, running, paused = false) {
-    if (mainWindow) mainWindow.webContents.send('test-bot-status', { text, running, paused });
+function sendBotStatus(botId, text, running, paused = false) {
+    if (mainWindow) mainWindow.webContents.send('test-bot-status', { botId, text, running, paused });
 }
 
-// === IPC ОБРАБОТЧИКИ УПРАВЛЕНИЯ ===
-ipcMain.on('pause-test-bot', () => {
-    if (botRunning && !botPaused) {
-        botPaused = true;
-        sendBotStatus('⏸ ПАУЗА', true, true);
+// --- IPC: Список ботов ---
+ipcMain.handle('get-bots-list', async () => {
+    try {
+        const data = JSON.parse(fs.readFileSync(BOTS_CONFIG_FILE, 'utf-8'));
+        return data.bots.map(b => ({ id: b.id, name: b.name, description: b.description }));
+    } catch (e) { return []; }
+});
+
+// --- IPC: Управление ---
+function getBotState(botId) {
+    if (!botsRuntimeState[botId]) botsRuntimeState[botId] = { running: false, paused: false, stopRequested: false, resumeCallback: null };
+    return botsRuntimeState[botId];
+}
+
+ipcMain.on('pause-test-bot', (event, botId) => {
+    const state = getBotState(botId);
+    if (state.running && !state.paused) { state.paused = true; sendBotStatus(botId, '⏸ ПАУЗА', true, true); }
+});
+
+ipcMain.on('resume-test-bot', (event, botId) => {
+    const state = getBotState(botId);
+    if (state.running && state.paused) {
+        state.paused = false;
+        if (state.resumeCallback) { state.resumeCallback(); state.resumeCallback = null; }
+        sendBotStatus(botId, '▶ Продолжение...', true, false);
     }
 });
 
-ipcMain.on('resume-test-bot', () => {
-    if (botRunning && botPaused) {
-        botPaused = false;
-        if (resumeCallback) {
-            resumeCallback();
-            resumeCallback = null;
-        }
-        sendBotStatus('▶ Продолжение...', true, false);
+ipcMain.on('stop-test-bot', (event, botId) => {
+    const state = getBotState(botId);
+    if (state.running) {
+        state.stopRequested = true; state.paused = false;
+        if (state.resumeCallback) { state.resumeCallback(); state.resumeCallback = null; }
     }
 });
 
-ipcMain.on('stop-test-bot', () => {
-    if (botRunning) {
-        botStopRequested = true;
-        botPaused = false;
-        if (resumeCallback) {
-            resumeCallback();
-            resumeCallback = null;
-        }
-    }
-});
-
-ipcMain.handle('start-test-bot', async () => {
-    if (botRunning) return { ok: false, error: 'Бот уже работает' };
+// --- IPC: Запуск ---
+ipcMain.handle('start-test-bot', async (event, botId) => {
+    const state = getBotState(botId);
+    if (state.running) return { ok: false, error: 'Бот уже работает' };
     if (!humanInput) return { ok: false, error: 'Модуль human_input не загружен.' };
 
-    let areas;
+    let areas, botsData;
     try {
         areas = JSON.parse(fs.readFileSync(AREAS_FILE, 'utf-8'));
-    } catch (e) {
-        return { ok: false, error: 'Файл bot-areas.json не найден.' };
+        botsData = JSON.parse(fs.readFileSync(BOTS_CONFIG_FILE, 'utf-8'));
+    } catch (e) { return { ok: false, error: 'Ошибка чтения конфигов.' }; }
+
+    const botConfig = botsData.bots.find(b => b.id === botId);
+    if (!botConfig) return { ok: false, error: 'Бот не найден' };
+
+    let actions; // Теперь это массив объектов { type, target, wait }
+    try { actions = resolveBotSequence(botConfig); } catch (e) { return { ok: false, error: e.message }; }
+
+    // Валидация ID
+    for (const act of actions) {
+        if (act.target < 1 || act.target > areas.length) return { ok: false, error: `ID ${act.target} вне диапазона областей` };
     }
 
-    let clickIds;
-    try {
-        const seqData = JSON.parse(fs.readFileSync(SEQUENCE_FILE, 'utf-8'));
-        clickIds = resolveSequence(seqData);
-    } catch (e) {
-        return { ok: false, error: `Ошибка последовательности: ${e.message}` };
-    }
-
-    if (clickIds.length === 0) return { ok: false, error: 'Последовательность пуста' };
-    for (const id of clickIds) {
-        if (id < 1 || id > areas.length) return { ok: false, error: `ID ${id} вне диапазона областей` };
-    }
-
-    // Сброс флагов перед стартом
-    botRunning = true;
-    botPaused = false;
-    botStopRequested = false;
-    resumeCallback = null;
-
-    sendBotStatus(`Отсчёт 3 сек... (${clickIds.length} кликов)`, true);
+    state.running = true; state.paused = false; state.stopRequested = false; state.resumeCallback = null;
+    sendBotStatus(botId, `Отсчёт 3 сек... (${actions.length} действий)`, true);
     await showCountdown(3000);
 
+    const checkState = async () => {
+        if (state.stopRequested) throw new Error('BOT_STOPPED');
+        if (state.paused) {
+            sendBotStatus(botId, '⏸ ПАУЗА', true, true);
+            await new Promise(resolve => { state.resumeCallback = resolve; });
+            if (state.stopRequested) throw new Error('BOT_STOPPED');
+            sendBotStatus(botId, '▶ Продолжение...', true, false);
+        }
+    };
+
+    const iSleep = async (ms) => {
+        let elapsed = 0;
+        while (elapsed < ms) {
+            await checkState();
+            if (state.stopRequested) throw new Error('BOT_STOPPED');
+            const step = Math.min(50, ms - elapsed);
+            await sleep(step);
+            elapsed += step;
+        }
+    };
+
     try {
-        for (let i = 0; i < clickIds.length; i++) {
-            await checkBotState(); // Проверка перед каждым новым кликом
-            
-            const id = clickIds[i];
-            const area = areas[id - 1];
+        for (let i = 0; i < actions.length; i++) {
+            await checkState();
+            const action = actions[i];
+            const area = areas[action.target - 1];
             const p = randomPoint(area);
             
-            sendBotStatus(`[${i+1}/${clickIds.length}] Клик: ${area.name || 'ID'+id}`, true);
-            await clickAt(p.x, p.y, MOUSE_SPEED);
-
-            const pause = logNormal(Math.log(200), 0.5);
-            await interruptibleSleep(pause);
+            const actionText = action.type === 'click' ? 'Клик' : 'Движение';
+            sendBotStatus(botId, `[${i+1}/${actions.length}] ${actionText}: ${area.name || 'ID'+action.target}`, true);
+            
+            // 1. Всегда двигаем мышь к цели
+            await moveMouseTo(p.x, p.y, MOUSE_SPEED, checkState, iSleep);
+            
+            // 2. Если это КЛИК — делаем паузу прицеливания и кликаем
+            if (action.type === 'click') {
+                await checkState();
+                await iSleep(logNormal(Math.log(40), 0.4)); // Прицеливание
+                
+                await checkState();
+                const holdTime = logNormal(Math.log(30), 0.3);
+                humanInput.mouseDown(0);
+                await iSleep(holdTime);
+                humanInput.mouseUp(0);
+                
+                // Пауза после клика перед следующим действием
+                await iSleep(logNormal(Math.log(200), 0.5));
+            } 
+            // 3. Если это ДВИЖЕНИЕ — просто ждём указанное время (если есть)
+            else if (action.type === 'move') {
+                if (action.wait > 0) {
+                    await iSleep(action.wait);
+                }
+                // Небольшая фиксированная пауза после движения, чтобы не дёргалось мгновенно
+                await iSleep(100 + Math.random() * 100); 
+            }
         }
-        sendBotStatus('✅ Выполнено успешно', false);
+        sendBotStatus(botId, '✅ Готово', false);
     } catch (err) {
-        if (err.message === 'BOT_STOPPED') {
-            sendBotStatus('🛑 Остановлено пользователем', false);
-        } else {
-            sendBotStatus('❌ Ошибка выполнения', false);
-            console.error(err);
-        }
+        if (err.message === 'BOT_STOPPED') sendBotStatus(botId, '🛑 Остановлено', false);
+        else { sendBotStatus(botId, '❌ Ошибка', false); console.error(err); }
     } finally {
-        botRunning = false;
-        botPaused = false;
-        botStopRequested = false;
-        resumeCallback = null;
+        state.running = false; state.paused = false; state.stopRequested = false; state.resumeCallback = null;
     }
-
     return { ok: true };
 });

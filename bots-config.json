@@ -1,0 +1,50 @@
+{
+  "bots": [
+    {
+      "id": "bot_from_2",
+      "name": "Бот для предметов со 2 тира",
+      "description": "",
+      "macros": {
+        "block1": [3, 4, 3, 5, 3, 6, 3, 7, 3, 8],
+        "block2": [2, 9, "@block1", 2, 10, "@block1", 2, 11, "@block1", 2, 12, "@block1", 2, 13, "@block1"],
+        "block3_full": [1, 16, "@block2", 1, 17, "@block2", 1, 18, "@block2", 1, 19, "@block2", 1, 20, "@block2"]
+      },
+      "sequence": ["@block3_full"]
+    },
+    {
+      "id": "bot_from_3",
+      "name": "Бот для предметов с 3 тира",
+      "description": "",
+      "macros": {
+        "block1": [3, 4, 3, 5, 3, 6, 3, 7, 3, 8],
+        "block2": [2, 9, "@block1", 2, 10, "@block1", 2, 11, "@block1", 2, 12, "@block1", 2, 13, "@block1"],
+        "block3_full": [1, 15, "@block2", 1, 16, "@block2", 1, 17, "@block2", 1, 18, "@block2", 1, 19, "@block2"]
+      },
+      "sequence": ["@block3_full"]
+    },
+    {
+      "id": "bot_from_4",
+      "name": "Бот для предметов с 4 тира",
+      "description": "",
+      "macros": {
+        "block1": [3, 4, 3, 5, 3, 6, 3, 7, 3, 8],
+        "block2": [2, 9, "@block1", 2, 10, "@block1", 2, 11, "@block1", 2, 12, "@block1", 2, 13, "@block1"],
+        "block3_full": [1, 14, "@block2", 1, 15, "@block2", 1, 16, "@block2", 1, 17, "@block2", 1, 18, "@block2"]
+      },
+      "sequence": ["@block3_full"]
+    },
+    {
+      "id": "bot_for_categories",
+      "name": "Бот для просмотра категорий",
+      "description": "",
+      "macros": {
+        "block1": [21, "m26"],
+        "block2": ["@block1", "m42"],
+        "block3": ["@block2", "m43"],
+        "block4": ["@block3", "m73"],
+        "block5": ["@block4", 74, "@block4", 75, "@block4", 76, "@block4", 77, "@block4", 78, "@block4", 79, "@block4", 80, "@block4", 81]
+      },
+      "sequence": ["@block5"]
+    }
+  ]
+}

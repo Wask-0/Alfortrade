@@ -412,20 +412,18 @@
       </div>
   </div>
   <div id="page-bots" class="page">
-    <div class="filter-panel">
-      <div class="filter-group filter-group-buttons">
-        <button class="export-btn" id="editAreasBtn">Редактирование областей</button>
+      <div class="container" style="padding-top: 20px;">
+          
+          <div class="filter-panel" style="justify-content: flex-end; margin-bottom: 20px;">
+              <button id="editAreasBtn" class="backend-btn">Редактирование областей</button>
+          </div>
+
+          <!-- Сюда JavaScript будет генерировать строки ботов -->
+          <div id="botsListContainer" class="bots-list-container">
+              <!-- Боты появятся здесь -->
+          </div>
+
       </div>
-    </div>
-    <div id="bots-container" class="bots-container">
-      <div class="bot-row">
-        <span class="bot-name">Тестовый бот</span>
-        <button class="bot-btn start" id="testBotStart">Запустить бота</button>
-        <button class="bot-btn pause" disabled id="testBotPause">Пауза (F9)</button>
-        <button class="bot-btn stop" disabled id="testBotStop">Стоп (F10)</button>
-        <span class="bot-status inactive" id="testBotStatus">Ожидание</span>
-      </div>
-    </div>
   </div>
   <script src="renderer.js"></script>
 </body>
