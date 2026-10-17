@@ -476,4 +476,45 @@ function initFlippingFilters() {
   });
 }
 
-module.exports = { calculateFlippingOpportunities, renderFlippingResults, updateFlipSortUI, initFlippingFilters };
+/**
+ * Чистая функция расчёта флиппинга (объект проверок, ПЗ №2 МДК 03.02).
+ *
+ * @param {Object} marketState - данные рынка: { ключ: { id, buyPrice, sellPrice } }
+ * @param {Object} settings - { threshold: число (%), sellMethod: 'order'|'instant' }
+ * @param {Object} taxProvider - { taxRate: число, orderFee: число }
+ * @returns {Array} сделки, отсортированные по убыванию прибыли
+ *
+ * П1: чистая продажа = цена продажи × (1 − комиссия) × (1 − налог); прибыль = чистая продажа − покупка
+ * П2: отсутствие цены или цена ≤ 0 — предмет исключается без ошибки
+ * П3: предмет включается только при прибыли > 0 и прибыли % ≥ порога
+ */
+function calculateOpportunities(marketState, settings, taxProvider) {
+  const results = [];
+  for (const item of Object.values(marketState || {})) {
+    const buyPrice = item.buyPrice;
+    const sellPrice = item.sellPrice;
+
+    // П2: нет цены или цена <= 0 — предмет исключается
+    if (buyPrice === null || buyPrice === undefined || buyPrice <= 0) continue;
+    if (sellPrice === null || sellPrice === undefined || sellPrice <= 0) continue;
+
+    // П1: комиссия ордера и налог
+    const fee = settings.sellMethod === 'order' ? taxProvider.orderFee : 0;
+    const netSell = sellPrice * (1 - fee) * (1 - taxProvider.taxRate);
+    const profit = netSell - buyPrice;
+    const profitPercent = Math.round((profit / buyPrice) * 1000) / 10;
+
+    // П3: прибыль > 0 и не ниже порога
+    if (profit > 0 && profitPercent >= settings.threshold) {
+      results.push({
+        id: item.id,
+        netSell: Math.round(netSell),
+        profit: Math.round(profit),
+        profitPercent
+      });
+    }
+  }
+  return results.sort((a, b) => b.profit - a.profit); // П1: сортировка
+}
+
+module.exports = { calculateFlippingOpportunities, renderFlippingResults, updateFlipSortUI, initFlippingFilters, calculateOpportunities };
