@@ -254,12 +254,20 @@ async function moveMouseTo(targetX, targetY, baseSpeed, checkStateFn, sleepFn) {
     if (dist < 2) return;
 
     const speed = baseSpeed * (0.75 + Math.random() * 0.5);
-    const bow = dist * (0.08 + Math.random() * 0.14);
+
+    // Прогиб траектории: маленький процент + абсолютный потолок.
+    // Курсор идёт почти прямо, отклонение не больше MAX_BOW px в любую сторону.
+    const MAX_BOW = 10;
+    const bow = Math.min(dist * (0.015 + Math.random() * 0.025), MAX_BOW);
     const sign = Math.random() < 0.5 ? 1 : -1;
     const nx = -dy / dist, ny = dx / dist;
-    const c1x = sx + dx*0.25 + nx*bow*sign, c1y = sy + dy*0.25 + ny*bow*sign;
+
+    // Контрольные точки ближе к прямой (0.3 / 0.7 вместо 0.25 / 0.75)
+    const c1x = sx + dx * 0.3 + nx * bow * sign;
+    const c1y = sy + dy * 0.3 + ny * bow * sign;
     const k = 0.4 + Math.random() * 0.6;
-    const c2x = sx + dx*0.75 - nx*bow*sign*k, c2y = sy + dy*0.75 - ny*bow*sign*k;
+    const c2x = sx + dx * 0.7 - nx * bow * sign * k;
+    const c2y = sy + dy * 0.7 - ny * bow * sign * k;
 
     const duration = (dist / speed) * 1000 * (0.85 + Math.random() * 0.35);
     const steps = Math.max(12, Math.floor(duration / 12));
@@ -268,8 +276,8 @@ async function moveMouseTo(targetX, targetY, baseSpeed, checkStateFn, sleepFn) {
     for (let i = 1; i <= steps; i++) {
         await checkStateFn();
         const e = smoothstep(i / steps);
-        let bx = bezier(e, sx, c1x, c2x, targetX) + (i < steps ? (Math.random()-0.5)*1.8 : 0);
-        let by = bezier(e, sy, c1y, c2y, targetY) + (i < steps ? (Math.random()-0.5)*1.8 : 0);
+        let bx = bezier(e, sx, c1x, c2x, targetX) + (i < steps ? (Math.random()-0.5)*1.2 : 0);
+        let by = bezier(e, sy, c1y, c2y, targetY) + (i < steps ? (Math.random()-0.5)*1.2 : 0);
         
         const mx = Math.round(bx - lastX), my = Math.round(by - lastY);
         if (mx !== 0 || my !== 0) { humanInput.moveRelative(mx, my); lastX += mx; lastY += my; }
@@ -279,10 +287,11 @@ async function moveMouseTo(targetX, targetY, baseSpeed, checkStateFn, sleepFn) {
         await sleepFn(Math.max(1, delay));
     }
 
+    // Overshoot уменьшен: ±3px вместо ±4, остаётся в пределах целевой области
     if (Math.random() < 0.35) {
         await checkStateFn();
         const cur = humanInput.getCursorPos();
-        humanInput.moveRelative(targetX + (Math.random()-0.5)*8 - cur.x, targetY + (Math.random()-0.5)*8 - cur.y);
+        humanInput.moveRelative(targetX + (Math.random()-0.5)*6 - cur.x, targetY + (Math.random()-0.5)*6 - cur.y);
         await sleepFn(40 + Math.random() * 70);
     }
 

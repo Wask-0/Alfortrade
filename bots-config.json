@@ -7,7 +7,7 @@
       "macros": {
         "block1": [3, 4, 3, 5, 3, 6, 3, 7, 3, 8],
         "block2": [2, 9, "@block1", 2, 10, "@block1", 2, 11, "@block1", 2, 12, "@block1", 2, 13, "@block1"],
-        "block3_full": [1, 16, "@block2", 1, 17, "@block2", 1, 18, "@block2", 1, 19, "@block2", 1, 20, "@block2"]
+        "block3_full": [1, 16, "@block2", 1, 15, "@block2", 1, 16, "@block2", 1, 17, "@block2", 1, 18, "@block2"]
       },
       "sequence": ["@block3_full"]
     },
@@ -18,7 +18,7 @@
       "macros": {
         "block1": [3, 4, 3, 5, 3, 6, 3, 7, 3, 8],
         "block2": [2, 9, "@block1", 2, 10, "@block1", 2, 11, "@block1", 2, 12, "@block1", 2, 13, "@block1"],
-        "block3_full": [1, 15, "@block2", 1, 16, "@block2", 1, 17, "@block2", 1, 18, "@block2", 1, 19, "@block2"]
+        "block3_full": [1, 15, "@block2", 1, 15, "@block2", 1, 16, "@block2", 1, 17, "@block2", 1, 18, "@block2"]
       },
       "sequence": ["@block3_full"]
     },
@@ -38,13 +38,106 @@
       "name": "Бот для просмотра категорий",
       "description": "",
       "macros": {
-        "block1": [21, "m26"],
-        "block2": ["@block1", "m42"],
-        "block3": ["@block2", "m43"],
-        "block4": ["@block3", "m73"],
-        "block5": ["@block4", 74, "@block4", 75, "@block4", 76, "@block4", 77, "@block4", 78, "@block4", 79, "@block4", 80, "@block4", 81]
+        "block1.1": [3, 4, 3, 5, 3, 6, 3, 7, 3, 8],
+        "block1.2": [2, 9, "@block1.1", 2, 10, "@block1.1", 2, 11, "@block1.1", 2, 12, "@block1.1", 2, 13, "@block1.1"],
+        "block1_full": [1, 17, "@block1.2", 1, 15, "@block1.2", 1, 16, "@block1.2", 1, 17, "@block1.2", 1, 18, "@block1.2", 99],
+
+        "block2.1": [3, 4, 3, 5, 3, 6, 3, 7, 3, 8],
+        "block2.2": [2, 9, "@block2.1", 2, 10, "@block2.1", 2, 11, "@block2.1", 2, 12, "@block2.1", 2, 13, "@block2.1"],
+        "block2_full": [1, 16, "@block2.2", 1, 15, "@block2.2", 1, 16, "@block2.2", 1, 17, "@block2.2", 1, 18, "@block2.2", 99],
+
+        "block3.1": [3, 4, 3, 5, 3, 6, 3, 7, 3, 8],
+        "block3.2": [2, 9, "@block3.1", 2, 10, "@block3.1", 2, 11, "@block3.1", 2, 12, "@block3.1", 2, 13, "@block3.1"],
+        "block3_full": [1, 15, "@block3.2", 1, 15, "@block3.2", 1, 16, "@block3.2", 1, 17, "@block3.2", 1, 18, "@block3.2", 99],
+
+        "block4.1": [3, 4, 3, 5, 3, 6, 3, 7, 3, 8],
+        "block4.2": [2, 9, "@block4.1", 2, 10, "@block4.1", 2, 11, "@block4.1", 2, 12, "@block4.1", 2, 13, "@block4.1"],
+        "block4_full": [1, 14, "@block4.2", 1, 15, "@block4.2", 1, 16, "@block4.2", 1, 17, "@block4.2", 1, 18, "@block4.2", 99],
+
+        "оружие": [],
+        "block1": [21, "m26", "m42"],
+        "block2": ["@block1", "m43", "m73"],
+        "block3": ["@block2", 74, 98, "@block2_full", "@block2", 75, 98, "@block4_full", "@block2", 76, 98, "@block4_full", "@block2", 77, 98, "@block4_full", "@block2", 78, 98, "@block4_full", "@block2", 79, 98, "@block4_full", "@block2", 80, 98, "@block4_full", "@block2", 81, 98,  "@block4_full"],
+        "block4": ["@block1", "m44", "m74"],
+        "block5": ["@block4", 75, 98, "@block3_full", "@block4", 76, 98, "@block4_full", "@block4", 77, 98, "@block4_full", "@block4", 78, 98, "@block4_full", "@block4", 79, 98, "@block4_full", "@block4", 80, 98, "@block4_full", "@block4", 81, 98, "@block4_full", "@block4", 82, 98, "@block4_full"],
+        "block6": ["@block1", "m45", "m75"],
+        "block7": ["@block6", 76, 98, "@block3_full", "@block6", 77, 98, "@block4_full", "@block6", 78, 98, "@block4_full", "@block6", 79, 98, "@block4_full", "@block6", 80, 98, "@block4_full", "@block6", 81, 98, "@block4_full", "@block6", 82, 98, "@block4_full", "@block6", 83, 98, "@block4_full"],
+        "block8": ["@block1", "m46", "m76"],
+        "block9": ["@block8", 77, 98, "@block3_full", "@block8", 78, 98, "@block4_full", "@block8", 79, 98, "@block4_full", "@block8", 80, 98, "@block4_full", "@block8", 81, 98, "@block4_full", "@block8", 82, 98, "@block4_full", "@block8", 83, 98, "@block4_full", "@block8", 84, 98, "@block4_full"],
+        "block10": ["@block1", "m47", "m77"],
+        "block11": ["@block10", 78, 98, "@block3_full", "@block10", 79, 98, "@block4_full", "@block10", 80, 98, "@block4_full", "@block10", 81, 98, "@block4_full", "@block10", 82, 98, "@block4_full", "@block10", 83, 98, "@block4_full", "@block10", 84, 98, "@block4_full", "@block10", 85, 98, "@block4_full"],
+        "block12": ["@block1", "m48", "m78"],
+        "block13": ["@block12", 79, 98, "@block3_full", "@block12", 80, 98, "@block4_full", "@block12", 81, 98, "@block4_full", "@block12", 82, 98, "@block4_full", "@block12", 83, 98, "@block4_full", "@block12", 84, 98, "@block4_full", "@block12", 85, 98, "@block4_full", "@block12", 86, 98, "@block4_full"],
+        "block14": ["@block1", "m49", "m79"],
+        "block15": ["@block14", 80, 98, "@block3_full", "@block14", 81, 98, "@block4_full", "@block14", 82, 98, "@block4_full", "@block14", 83, 98, "@block4_full", "@block14", 84, 98, "@block4_full", "@block14", 85, 98, "@block4_full", "@block14", 86, 98, "@block4_full", "@block14", 87, 98, "@block4_full"],
+        "block16": ["@block1", "m50", "m80"],
+        "block17": ["@block16", 81, 98, "@block3_full", "@block16", 82, 98, "@block4_full", "@block16", 83, 98, "@block4_full", "@block16", 84, 98, "@block4_full", "@block16", 85, 98, "@block4_full", "@block16", 86, 98, "@block4_full", "@block16", 87, 98, "@block4_full", "@block16", 88, 98, "@block4_full"],
+        "block18": ["@block1", "m51", "m81"],
+        "block19": ["@block18", 82, 98, "@block3_full", "@block18", 83, 98, "@block4_full", "@block18", 84, 98, "@block4_full", "@block18", 85, 98, "@block4_full", "@block18", 86, 98, "@block4_full", "@block18", 87, 98, "@block4_full", "@block18", 88, 98, "@block4_full", "@block18", 89, 98, "@block4_full"],
+        "block20": ["@block1", "m52", "m82"],
+        "block21": ["@block20", 83, 98, "@block1_full", "@block20", 84, 98, "@block4_full", "@block20", 85, 98, "@block4_full", "@block20", 86, 98, "@block4_full", "@block20", 87, 98, "@block4_full", "@block20", 88, 98, "@block4_full", "@block20", 89, 98, "@block4_full", "@block20", 90, 98, "@block4_full"],
+        "block22": ["@block1", "m53", "m83"],
+        "block23": ["@block22", 84, 98, "@block3_full", "@block22", 85, 98, "@block4_full", "@block22", 86, 98, "@block4_full", "@block22", 87, 98, "@block4_full", "@block22", 88, 98, "@block4_full", "@block22", 89, 98, "@block4_full", "@block22", 90, 98, "@block4_full", "@block22", 91, 98, "@block4_full"],
+        "block24": ["@block1", "m54", "m84"],
+        "block25": ["@block24", 85, 98, "@block3_full", "@block24", 86, 98, "@block4_full", "@block24", 87, 98, "@block4_full", "@block24", 88, 98, "@block4_full", "@block24", 89, 98, "@block4_full", "@block24", 90, 98, "@block4_full", "@block24", 91, 98, "@block4_full", "@block24", 92, 98, "@block4_full"],
+        "block26": ["@block1", "m55", "m85"],
+        "block27": ["@block26", 86, 98, "@block2_full", "@block26", 87, 98, "@block4_full", "@block26", 88, 98, "@block4_full", "@block26", 89, 98, "@block4_full", "@block26", 90, 98, "@block4_full", "@block26", 91, 98, "@block4_full", "@block26", 92, 98, "@block4_full", "@block26", 93, 98, "@block4_full"],
+        "block28": ["@block1", "m56", "m86"],
+        "block29": ["@block28", 87, 98, "@block3_full", "@block28", 88, 98, "@block4_full", "@block28", 89, 98, "@block4_full", "@block28", 90, 98, "@block4_full", "@block28", 91, 98, "@block4_full", "@block28", 92, 98, "@block4_full", "@block28", 93, 98, "@block4_full", "@block28", 94, 98, "@block4_full"],
+        "block30": ["@block1", "m57", "m87"],
+        "block31": ["@block30", 88, 98, "@block3_full", "@block30", 89, 98, "@block4_full", "@block30", 90, 98, "@block4_full", "@block30", 91, 98, "@block4_full", "@block30", 92, 98, "@block4_full", "@block30", 93, 98, "@block4_full", "@block30", 94, 98, "@block4_full", "@block30", 95, 98, "@block4_full"],
+        "block32": ["@block1", "m58", "m88"],
+        "block33": ["@block32", 89, 98, "@block3_full", "@block32", 90, 98, "@block4_full", "@block32", 91, 98, "@block4_full", "@block32", 92, 98, "@block4_full", "@block32", 93, 98, "@block4_full", "@block32", 94, 98, "@block4_full", "@block32", 95, 98, "@block4_full", "@block32", 96, 98, "@block4_full"],
+        "block34": ["@block1", "m59", "m89"],
+        "block35": ["@block34", 90, 98, "@block3_full", "@block34", 91, 98, "@block4_full", "@block34", 92, 98, "@block4_full", "@block34", 93, 98, "@block4_full", "@block34", 94, 98, "@block4_full", "@block34", 95, 98, "@block4_full", "@block34", 96, 98, "@block4_full", "@block34", 97, 98, "@block4_full"],
+    
+        "нагрудник": [],
+        "block36": [21, "m27", "m43"],
+        "block37": ["@block36", "m44", "m74"],
+        "block38": ["@block37", 75, 98, "@block2_full", "@block37", 76, 98, "@block4_full", "@block37", 77, 98, "@block4_full", "@block37", 78, 98, "@block4_full", "@block37", 79, 98, "@block4_full", "@block37", 80, 98, "@block4_full", "@block37", 81, 98, "@block4_full", "@block37", 82, 98, "@block4_full", "@block37", 83, 98, "@block4_full"],
+        "block39": ["@block36", "m45", "m75"],
+        "block40": ["@block39", 76, 98, "@block1_full", "@block39", 77, 98, "@block4_full", "@block39", 78, 98, "@block4_full", "@block39", 79, 98, "@block4_full", "@block39", 80, 98, "@block4_full", "@block39", 81, 98, "@block4_full", "@block39", 82, 98, "@block4_full", "@block39", 83, 98, "@block4_full", "@block39", 84, 98, "@block4_full", "@block39", 85, 98, "@block4_full"],
+        "block41": ["@block36", "m46", "m76"],
+        "block42": ["@block41", 77, 98, "@block2_full", "@block41", 78, 98, "@block4_full", "@block41", 79, 98, "@block4_full", "@block41", 80, 98, "@block4_full", "@block41", 81, 98, "@block4_full", "@block41", 82, 98, "@block4_full", "@block41", 83, 98, "@block4_full", "@block41", 84, 98, "@block4_full", "@block41", 85, 98, "@block4_full"],
+
+        "Шлем": [],
+        "block43": [21, "m28", "m44"],
+        "block44": ["@block43", "m45", "m75"],
+        "block45": ["@block44", 76, 98, "@block2_full", "@block44", 77, 98, "@block4_full", "@block44", 78, 98, "@block4_full", "@block44", 79, 98, "@block4_full", "@block44", 80, 98, "@block4_full", "@block44", 81, 98, "@block4_full", "@block44", 82, 98, "@block4_full", "@block44", 83, 98, "@block4_full", "@block44", 84, 98, "@block4_full"],
+        "block46": ["@block43", "m46", "m76"],
+        "block47": ["@block46", 77, 98, "@block1_full", "@block46", 78, 98, "@block4_full", "@block46", 79, 98, "@block4_full", "@block46", 80, 98, "@block4_full", "@block46", 81, 98, "@block4_full", "@block46", 82, 98, "@block4_full", "@block46", 83, 98, "@block4_full", "@block46", 84, 98, "@block4_full", "@block46", 85, 98, "@block4_full", "@block46", 86, 98, "@block4_full"],
+        "block48": ["@block43", "m47", "m77"],
+        "block49": ["@block48", 78, 98, "@block2_full", "@block48", 79, 98, "@block4_full", "@block48", 80, 98, "@block4_full", "@block48", 81, 98, "@block4_full", "@block48", 82, 98, "@block4_full", "@block48", 83, 98, "@block4_full", "@block48", 84, 98, "@block4_full", "@block48", 85, 98, "@block4_full", "@block48", 86, 98, "@block4_full"],
+
+        "Обувь": [],
+        "block50": [21, "m29", "m45"],
+        "block51": ["@block50", "m46", "m76"],
+        "block52": ["@block51", 77, 98, "@block2_full", "@block51", 78, 98, "@block4_full", "@block51", 79, 98, "@block4_full", "@block51", 80, 98, "@block4_full", "@block51", 81, 98, "@block4_full", "@block51", 82, 98, "@block4_full", "@block51", 83, 98, "@block4_full", "@block51", 84, 98, "@block4_full", "@block51", 85, 98, "@block4_full"],
+        "block53": ["@block50", "m47", "m77"],
+        "block54": ["@block53", 78, 98, "@block1_full", "@block53", 79, 98, "@block4_full", "@block53", 80, 98, "@block4_full", "@block53", 81, 98, "@block4_full", "@block53", 82, 98, "@block4_full", "@block53", 83, 98, "@block4_full", "@block53", 84, 98, "@block4_full", "@block53", 85, 98, "@block4_full", "@block53", 86, 98, "@block4_full", "@block53", 87, 98, "@block4_full"],
+        "block55": ["@block50", "m48", "m78"],
+        "block56": ["@block55", 79, 98, "@block2_full", "@block55", 80, 98, "@block4_full", "@block55", 81, 98, "@block4_full", "@block55", 82, 98, "@block4_full", "@block55", 83, 98, "@block4_full", "@block55", 84, 98, "@block4_full", "@block55", 85, 98, "@block4_full", "@block55", 86, 98, "@block4_full", "@block55", 87, 98, "@block4_full"],
+
+        "Левая Рука": [],
+        "block57": [21, "m30", "m46"],
+        "block58": ["@block57", "m47", "m77"],
+        "block59": ["@block58", 78, 98, "@block2_full", "@block58", 79, 98, "@block4_full", "@block58", 80, 98, "@block4_full", "@block58", 81, 98, "@block4_full", "@block58", 82, 98, "@block4_full", "@block58", 83, 98, "@block4_full"],
+        "block60": ["@block57", "m48", "m78"],
+        "block61": ["@block60", 79, 98, "@block2_full", "@block60", 80, 98, "@block4_full", "@block60", 81, 98, "@block4_full", "@block60", 82, 98, "@block4_full", "@block60", 83, 98, "@block4_full", "@block60", 84, 98, "@block4_full"],
+        "block62": ["@block57", "m49", "m79"],
+        "block63": ["@block62", 80, 98, "@block1_full", "@block62", 81, 98, "@block4_full", "@block62", 82, 98, "@block4_full", "@block62", 83, 98, "@block4_full", "@block62", 84, 98, "@block4_full", "@block62", 85, 98, "@block4_full"],
+
+        "Плащи": [],
+        "block64": [21, "m31", "m47"],
+        "block65": ["@block64", 48, 98, "@block2_full", "@block64", 49, 98, "@block4_full", "@block64", 50, 98, "@block4_full", "@block64", 51, 98, "@block4_full", "@block64", 52, 98, "@block4_full", "@block64", 53, 98, "@block4_full", "@block64", 54, 98, "@block4_full", "@block64", 55, 98, "@block4_full", "@block64", 56, 98, "@block4_full", "@block64", 57, 98, "@block4_full", "@block64", 58, 98, "@block4_full", "@block64", 59, 98, "@block4_full", "@block64", 60, 98, "@block4_full", "@block64", 61, 98, "@block4_full", "@block64", 62, 98, "@block4_full"],
+
+        "Сумки": [],
+        "block66": [21, "m32", "m48"],
+        "block67": ["@block66", 49, 98, "@block2_full", "@block66", 50, 98, "@block4_full"],
+
+        "block_do_all": ["@block3", "@block5", "@block7", "@block9", "@block11", "@block13", "@block15", "@block17", "@block19", "@block21", "@block23", "@block25", "@block27", "@block29", "@block31", "@block33", "@block35", "@block38", "@block40", "@block42", "@block45", "@block47", "@block49", "@block52", "@block54", "@block56", "@block59", "@block61", "@block63", "@block65", "@block67"]
       },
-      "sequence": ["@block5"]
+      "sequence": ["@block_do_all"]
     }
   ]
 }
