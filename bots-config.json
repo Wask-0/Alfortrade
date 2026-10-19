@@ -1,6 +1,17 @@
 {
   "bots": [
     {
+      "id": "bot_from_1",
+      "name": "Бот для предметов с 1 тира",
+      "description": "",
+      "macros": {
+        "block1.1": [3, 4, 3, 5, 3, 6, 3, 7, 3, 8],
+        "block1.2": [2, 9, "@block1.1", 2, 10, "@block1.1", 2, 11, "@block1.1", 2, 12, "@block1.1", 2, 13, "@block1.1"],
+        "block1_full": [1, 17, "@block1.2", 1, 15, "@block1.2", 1, 16, "@block1.2", 1, 17, "@block1.2", 1, 18, "@block1.2", 99]
+      },
+      "sequence": ["@block1_full"]
+    },
+    {
       "id": "bot_from_2",
       "name": "Бот для предметов со 2 тира",
       "description": "",
@@ -34,8 +45,19 @@
       "sequence": ["@block3_full"]
     },
     {
+      "id": "bot_for_recureces",
+      "name": "Бот для ресурсов для зачарования",
+      "description": "",
+      "macros": {
+        "block3": [1, 14, 1, 15, 1, 16, 1, 17, 1, 18],
+        "block4": [21, "m37", "m53", "m59", "m89"],
+        "block5": ["@block4", 90, 98, "@block3", 99, "@block4", 91, 98, "@block3", 99, "@block4", 92, 98, "@block3", 99]
+      },
+      "sequence": ["@block5"]
+    },
+    {
       "id": "bot_for_categories",
-      "name": "Бот для просмотра категорий",
+      "name": "Бот для просмотра обычного города (полный)",
       "description": "",
       "macros": {
         "block1.1": [3, 4, 3, 5, 3, 6, 3, 7, 3, 8],
