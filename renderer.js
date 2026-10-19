@@ -7,6 +7,8 @@ const { renderMyOrdersTable, initMyOrdersListener } = require('./js/my-orders.js
 const { addToPlanner, initPlanner, renderPlannerTable } = require('./js/planner.js');
 const { initBots } = require('./js/bots.js');
 
+const market = require('./js/market.js');
+market.initScrollHandler();
 // ===== IPC СЛУШАТЕЛИ =====
 ipcRenderer.on('dictionary-loaded', (event, dictionary) => {
     state.itemsDict = dictionary;

@@ -1896,3 +1896,15 @@ thead th.sticky-col-2::after {
     border: 1px solid var(--border-color);
     opacity: 0.7;
 }
+
+#marketTableContainer {
+  height: calc(100vh - 200px);  /* подстрой под свой layout */
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+}
+
+#tableBody tr {
+  height: 42px;  /* фиксируем высоту строки для точных расчётов */
+  box-sizing: border-box;
+}

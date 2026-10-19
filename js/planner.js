@@ -47,6 +47,7 @@ function addToPlanner(flipItem) {
             uniqueId: parentUniqueId,
             isCraftParent: true,
             craftTargetName: flipItem.itemName,
+            craftTargetItemId: flipItem.itemId, 
             itemId: flipItem.craftDetailsObj.baseItemId || flipItem.itemId,
             itemName: flipItem.craftDetailsObj.baseItemName,
             quality: flipItem.quality,
@@ -157,7 +158,15 @@ function renderPlannerTable() {
         const isMat = !!item.isCraftMaterial;
 
         const buySpd = (!isMat && item.itemId && item.quality) ? getSalesPerDayFor(item.itemId, item.quality, item.buyCity) : null;
-        const sellSpd = (!isMat && item.itemId && item.quality) ? getSalesPerDayFor(item.itemId, item.quality, item.sellCity) : null;
+        let sellSpd = null;
+        if (!isMat && item.quality) {
+            if (item.isCraftParent && item.craftTargetItemId) {
+                sellSpd = getSalesPerDayFor(item.craftTargetItemId, item.quality, item.sellCity);
+            } else if (item.itemId) {
+                sellSpd = getSalesPerDayFor(item.itemId, item.quality, item.sellCity);
+            }
+        }
+
 
         let nameHtml = item.itemName;
         if (item.isCraftParent) nameHtml += ` <span class="craft-badge">✦ Зачаровать: ${item.craftTargetName}</span>`;

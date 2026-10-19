@@ -80,6 +80,7 @@ function calculateFlippingOpportunities() {
 
         let basePrice = null;
         let baseCityName = '';
+        let baseCityKey = '';
         let baseCommission = 0;
 
         if (state.flipSettings.buyCity === 'any') {
@@ -91,7 +92,7 @@ function calculateFlippingOpportunities() {
             const p = state.flipSettings.buyMethod === 'order' 
               ? getFallbackBuyPrice(baseItem, city) 
               : (cd.sell !== null && cd.sell > 0 ? cd.sell : null);
-            if (p !== null && p > 0 && p < minP) { minP = p; baseCityName = getCityDisplayName(city); }
+            if (p !== null && p > 0 && p < minP) { minP = p; baseCityName = getCityDisplayName(city); baseCityKey = city; }
           });
           if (minP !== Infinity && minP > 0) basePrice = minP;
         } else {
@@ -103,6 +104,7 @@ function calculateFlippingOpportunities() {
             if (p !== null && p > 0) {
               basePrice = p;
               baseCityName = getCityDisplayName(state.flipSettings.buyCity);
+              baseCityKey = state.flipSettings.buyCity; 
             }
           }
         }
@@ -133,7 +135,8 @@ function calculateFlippingOpportunities() {
             if (state.flipSettings.enchantResourceCity === 'target') {
               resourceCities = state.flipSettings.sellCity === 'blackMarket' ? ['caerleon'] : [state.flipSettings.sellCity];
             } else if (state.flipSettings.enchantResourceCity === 'source') {
-              resourceCities = state.flipSettings.buyCity === 'any' ? allRoyalCities : [state.flipSettings.buyCity];
+              // ИЗМЕНЕНО: ресурсы строго в городе покупки базы этого варианта
+              resourceCities = [baseCityKey];
             } else {
               resourceCities = [...allRoyalCities];
             }
