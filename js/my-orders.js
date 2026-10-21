@@ -92,7 +92,6 @@ function initMyOrdersListener() {
                     orders: data.filter(o => o && o.orderId),
                     lastUpdate: currentTime
                 };
-                console.log(`[MyOrders] Город ${cityId}: ПЕРЕЗАПИСЬ (прошло ${Math.round(timeSinceLastUpdate/1000)}с), ${data.length} ордеров`);
             } else {
                 // Прошло меньше 3 минут - добавляем/обновляем
                 if (!state.myOrdersByCity[cityId]) {
@@ -112,8 +111,6 @@ function initMyOrdersListener() {
                         cityData.orders.push(order);
                     }
                 });
-                
-                console.log(`[MyOrders] Город ${cityId}: ОБНОВЛЕНИЕ (прошло ${Math.round(timeSinceLastUpdate/1000)}с), добавлено/обновлено ${data.length} ордеров`);
             }
             
         } else if (data.orderId && data.locationId) {
@@ -130,7 +127,6 @@ function initMyOrdersListener() {
                     orders: [data],
                     lastUpdate: currentTime
                 };
-                console.log(`[MyOrders] Город ${cityId}: ПЕРЕЗАПИСЬ одиночным ордером (прошло ${Math.round(timeSinceLastUpdate/1000)}с)`);
             } else {
                 // Прошло меньше 3 минут - добавляем/обновляем
                 if (!state.myOrdersByCity[cityId]) {

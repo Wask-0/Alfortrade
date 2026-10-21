@@ -477,7 +477,7 @@ ipcMain.handle('start-test-bot', async (event, botId) => {
         sendBotStatus(botId, '✅ Готово', false);
     } catch (err) {
         if (err.message === 'BOT_STOPPED') sendBotStatus(botId, '🛑 Остановлено', false);
-        else { sendBotStatus(botId, '❌ Ошибка', false); console.error(err); }
+        else { sendBotStatus(botId, '❌ Ошибка', false);}
     } finally {
         state.running = false; state.paused = false; state.stopRequested = false; state.resumeCallback = null;
     }

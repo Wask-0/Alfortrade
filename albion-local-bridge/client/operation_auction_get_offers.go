@@ -3,7 +3,6 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 	"sync"
@@ -39,7 +38,6 @@ type operationAuctionGetOffers struct {
 }
 
 func (op operationAuctionGetOffers) Process(state *albionState) {
-	log.Println("[Market] Got AuctionGetOffers operation...")
 	state.RecordMarketDataRequest(time.Now())
 }
 
@@ -61,10 +59,8 @@ type parsedOrder struct {
 
 // === ОСНОВНАЯ ЛОГИКА ОБРАБОТКИ ===
 func (op operationAuctionGetOffersResponse) Process(albionState *albionState) {
-	log.Println("[Market] Got response to AuctionGetOffers operation...")
 
 	if !albionState.IsValidLocation() {
-		log.Println("[Market] Warning: State location is invalid, skipping.")
 		return
 	}
 
@@ -102,7 +98,6 @@ func (op operationAuctionGetOffersResponse) Process(albionState *albionState) {
 		salesPerDay := int(spdFloat)
 
 		if order.LocationID == "" {
-			log.Printf("[Market] Warning: LocationID is still empty for Item=%s, Type=%s. Skipping.", itemId, auctionType)
 			continue
 		}
 
@@ -145,8 +140,6 @@ func (op operationAuctionGetOffersResponse) Process(albionState *albionState) {
 
 	now := time.Now()
 	myCharId := fmt.Sprintf("%s", albionState.CharacterId)
-
-	log.Printf("[Market] Processing %d offers and %d requests", len(offers), len(requests))
 
 	sendParsedOrders := func(list []parsedOrder) {
 		for _, p := range list {
@@ -210,7 +203,6 @@ func (op operationAuctionGetOffersResponse) Process(albionState *albionState) {
 
 			// === РАЗДЕЛЕНИЕ ПОТОКОВ ===
 			if isMyOrder {
-				log.Printf("[MY ORDER] Sending to /my-order-update: Item=%s, Price=%d", p.itemId, p.price)
 				SendMyOrderToElectron(localData) // Отдельный эндпоинт
 			} else {
 				SendToLocalElectron(localData)   // Обычный рынок

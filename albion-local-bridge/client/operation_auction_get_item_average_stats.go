@@ -33,7 +33,6 @@ func (op operationAuctionGetItemAverageStats) Process(state *albionState) {
 	}
 
 	state.marketHistoryIDLookup[index] = mhInfo
-	log.Debugf("Market History - Caching %d at %d.", mhInfo.albionId, index)
 }
 
 type operationAuctionGetItemAverageStatsResponse struct {
@@ -143,10 +142,6 @@ func (op operationAuctionGetItemAverageStatsResponse) Process(state *albionState
 		log.Debugf("Item ID %d not found in items.json dump", mhInfo.albionId)
 		return 
 	}
-
-	log.Infof("[History] CALCULATION: ItemID=%d, TotalSales=%d, Diff=%.0f, DurationDays=%.2f, ResultSPD=%d", 
-		mhInfo.albionId, totalSales, diff, diff/10_000_000, salesPerDay)
-
 	
 	// --- ОТПРАВКА ДАННЫХ В ELECTRON ---
 	localData := LocalMarketData{
@@ -160,5 +155,4 @@ func (op operationAuctionGetItemAverageStatsResponse) Process(state *albionState
 	}
 
 	SendToLocalElectron(localData)
-	log.Infof("[History] Sent SalesPerDay=%d for Item=%s (%s)", salesPerDay, itemKey, state.LocationId)
 }
