@@ -1,5 +1,6 @@
 const { state, savePlannerItems } = require('./store.js');
 const { getQualityName, formatPrice } = require('./utils.js');
+const { ipcRenderer } = require('electron');
 
 const statusLabels = {
     planned: 'В плане',
@@ -98,6 +99,18 @@ function addToPlanner(flipItem) {
         const uniqueId = `${flipItem.itemId}_${flipItem.buyCity}_${flipItem.sellCity}_${now}`;
         state.plannerItems.push({ ...flipItem, uniqueId, purchased: 0, status: 'planned' });
     }
+
+    savePlannerItems();
+    renderPlannerTable();
+}
+
+function changePurchased(uniqueId, delta) {
+    const item = state.plannerItems.find(i => i.uniqueId === uniqueId);
+    if (!item) return;
+
+    const max = item.quantity || 0;
+    const current = item.purchased || 0;
+    item.purchased = Math.max(0, Math.min(max, current + delta));
 
     savePlannerItems();
     renderPlannerTable();
@@ -209,7 +222,13 @@ function renderPlannerTable() {
                 </td>
             `}
             <td class="col-quantity">${quantity}</td>
-            <td class="col-purchased">${purchased}</td>
+            <td class="col-purchased">
+                <div class="purchased-controls">
+                    <button class="qty-btn" onclick="window.changePlannerPurchased('${item.uniqueId}', -1)" ${purchased <= 0 ? 'disabled' : ''}>−</button>
+                    <span class="purchased-value">${purchased}</span>
+                    <button class="qty-btn" onclick="window.changePlannerPurchased('${item.uniqueId}', 1)" ${purchased >= quantity ? 'disabled' : ''}>+</button>
+                </div>
+            </td>
             <td class="status-cell">
                 <div class="status-text">${statusLabels[item.status]}</div>
                 <div class="status-controls">
@@ -292,6 +311,248 @@ function closeCraftSummary() {
     document.getElementById('craftSummaryModal')?.classList.remove('open');
 }
 
+// ===== ЗАКУПКА ПРЕДМЕТОВ =====
+// Локальное состояние для хранения выбранных количеств
+let purchaseQuantities = {};
+
+function getPurchaseKey(item) {
+    // Используем строковое представление для всех значений, включая null
+    return `${item.uniqueId}_${item.itemId}_${item.quality || 'null'}_${item.buyMethod}`;
+}
+
+function getPurchaseQuantity(item) {
+    const key = getPurchaseKey(item);
+    if (purchaseQuantities[key] !== undefined) {
+        return purchaseQuantities[key];
+    }
+    return item.quantity || 0;
+}
+
+function updatePurchaseQuantity(uniqueId, itemId, quality, buyMethod, newQty, maxQty) {
+    // Используем строковое представление для quality
+    const qualityStr = quality === null || quality === undefined || quality === 'null' ? 'null' : quality.toString();
+    const key = `${uniqueId}_${itemId}_${qualityStr}_${buyMethod}`;
+    
+    newQty = Math.max(0, Math.min(maxQty, newQty));
+    purchaseQuantities[key] = newQty;
+    
+    // Обновляем только конкретную строку, а не всю таблицу
+    updatePurchaseRow(uniqueId, itemId, qualityStr, buyMethod, newQty);
+}
+
+function updatePurchaseRow(uniqueId, itemId, qualityStr, buyMethod, newQty) {
+    const item = state.plannerItems.find(i => i.uniqueId === uniqueId);
+    if (!item) return;
+
+    const row = document.querySelector(`tr[data-unique-id="${uniqueId}"]`);
+    if (!row) return;
+
+    const itemTotal = (item.buyPriceRaw || 0) * newQty;
+    
+    // Обновляем значение в поле ввода
+    const qtyInput = row.querySelector('.qty-input');
+    if (qtyInput) {
+        qtyInput.value = newQty;
+    }
+    
+    // Обновляем итоговую сумму в строке
+    const totalCell = row.querySelector('.price-buy');
+    if (totalCell) {
+        totalCell.textContent = formatPrice(itemTotal);
+    }
+    
+    // Обновляем общую сумму
+    updateTotalAmount();
+}
+
+function updateTotalAmount() {
+    const citySelect = document.getElementById('purchase-city-select');
+    const totalAmountEl = document.getElementById('purchaseTotalAmount');
+    if (!citySelect || !totalAmountEl) return;
+
+    const selectedCity = citySelect.value;
+    const allowedStatuses = ['planned', 'buying'];
+    let totalAmount = 0;
+
+    state.plannerItems.forEach(item => {
+        if (!allowedStatuses.includes(item.status)) return;
+        if (item.buyCity !== selectedCity) return;
+
+        const qty = getPurchaseQuantity(item);
+        totalAmount += (item.buyPriceRaw || 0) * qty;
+    });
+
+    totalAmountEl.textContent = formatPrice(totalAmount);
+}
+
+function renderPurchaseSummary() {
+    const tbody = document.getElementById('purchaseBody');
+    const citySelect = document.getElementById('purchase-city-select');
+    const totalAmountEl = document.getElementById('purchaseTotalAmount');
+    if (!tbody || !citySelect) return;
+
+    const selectedCity = citySelect.value;
+    const allowedStatuses = ['planned', 'buying'];
+    const items = [];
+    let totalAmount = 0;
+
+    state.plannerItems.forEach(item => {
+        // Включаем и обычные предметы, и ресурсы для зачарования
+        if (!allowedStatuses.includes(item.status)) return;
+        if (item.buyCity !== selectedCity) return;
+
+        const qty = getPurchaseQuantity(item);
+        const itemTotal = (item.buyPriceRaw || 0) * qty;
+        totalAmount += itemTotal;
+
+        items.push({
+            ...item,
+            purchaseQty: qty,
+            maxQty: item.quantity || 0,
+            itemTotal: itemTotal
+        });
+    });
+
+    // Сортировка: сначала обычные предметы, потом ресурсы
+    items.sort((a, b) => {
+        if (a.isCraftMaterial && !b.isCraftMaterial) return 1;
+        if (!a.isCraftMaterial && b.isCraftMaterial) return -1;
+        return 0;
+    });
+
+    tbody.innerHTML = '';
+    if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px; color: #888;">Нет предметов для закупки в этом городе</td></tr>';
+        if (totalAmountEl) totalAmountEl.textContent = '0';
+        return;
+    }
+
+    items.forEach(item => {
+        const row = document.createElement('tr');
+        row.dataset.uniqueId = item.uniqueId; // Добавляем data-атрибут для идентификации строки
+        
+        const isMat = !!item.isCraftMaterial;
+        
+        let nameHtml = item.itemName;
+        if (isMat) {
+            nameHtml += ' <span class="craft-badge" style="background: #ff9800; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-left: 5px;">Ресурс</span>';
+        }
+
+        row.innerHTML = `
+            <td class="col-item-name">${nameHtml}</td>
+            <td>${item.quality ? getQualityName(item.quality) : '-'}</td>
+            <td>${getMethodLabel(item.buyMethod, 'buy')}</td>
+            <td class="col-quantity">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button class="qty-btn" data-action="decrease" data-unique-id="${item.uniqueId}" data-item-id="${item.itemId}" data-quality="${item.quality || 'null'}" data-buy-method="${item.buyMethod}" data-max-qty="${item.maxQty}" style="width: 28px; height: 28px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; display: flex; align-items: center; justify-content: center;">−</button>
+                    <input type="number" class="qty-input" value="${item.purchaseQty}" min="0" max="${item.maxQty}" data-unique-id="${item.uniqueId}" data-item-id="${item.itemId}" data-quality="${item.quality || 'null'}" data-buy-method="${item.buyMethod}" data-max-qty="${item.maxQty}" style="width: 60px; padding: 4px 8px; background: #1a1a1a; color: white; border: 1px solid #555; border-radius: 4px; text-align: center;">
+                    <button class="qty-btn" data-action="increase" data-unique-id="${item.uniqueId}" data-item-id="${item.itemId}" data-quality="${item.quality || 'null'}" data-buy-method="${item.buyMethod}" data-max-qty="${item.maxQty}" style="width: 28px; height: 28px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; display: flex; align-items: center; justify-content: center;">+</button>
+                    <span style="color: #888; font-size: 12px;">из ${item.maxQty}</span>
+                </div>
+            </td>
+            <td class="price-sell">${formatPrice(item.buyPriceRaw)}</td>
+            <td class="price-buy">${formatPrice(item.itemTotal)}</td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    if (totalAmountEl) {
+        totalAmountEl.textContent = formatPrice(totalAmount);
+    }
+
+    // Добавляем обработчики для кнопок и инпутов
+    document.querySelectorAll('.qty-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const action = e.currentTarget.dataset.action;
+            const uniqueId = e.currentTarget.dataset.uniqueId;
+            const itemId = e.currentTarget.dataset.itemId;
+            const qualityStr = e.currentTarget.dataset.quality;
+            const buyMethod = e.currentTarget.dataset.buyMethod;
+            const maxQty = parseInt(e.currentTarget.dataset.maxQty);
+            
+            const item = state.plannerItems.find(i => i.uniqueId === uniqueId);
+            if (!item) return;
+
+            const currentQty = getPurchaseQuantity(item);
+            let newQty = currentQty;
+
+            if (action === 'increase') {
+                newQty = currentQty + 1;
+            } else if (action === 'decrease') {
+                newQty = currentQty - 1;
+            }
+
+            updatePurchaseQuantity(uniqueId, itemId, qualityStr, buyMethod, newQty, maxQty);
+        });
+    });
+
+    document.querySelectorAll('.qty-input').forEach(input => {
+        input.addEventListener('change', (e) => {
+            const uniqueId = e.currentTarget.dataset.uniqueId;
+            const itemId = e.currentTarget.dataset.itemId;
+            const qualityStr = e.currentTarget.dataset.quality;
+            const buyMethod = e.currentTarget.dataset.buyMethod;
+            const maxQty = parseInt(e.currentTarget.dataset.maxQty);
+            
+            let newQty = parseInt(e.currentTarget.value) || 0;
+            updatePurchaseQuantity(uniqueId, itemId, qualityStr, buyMethod, newQty, maxQty);
+        });
+    });
+}
+
+function openPurchaseSummary() {
+    // Сбрасываем выбранные количества при открытии
+    purchaseQuantities = {};
+    renderPurchaseSummary();
+    document.getElementById('purchaseModal')?.classList.add('open');
+}
+
+function closePurchaseSummary() {
+    document.getElementById('purchaseModal')?.classList.remove('open');
+}
+
+function startPurchaseBot() {
+    const citySelect = document.getElementById('purchase-city-select');
+    const selectedCity = citySelect?.value;
+
+    if (!selectedCity) {
+        alert('Выберите город для закупки');
+        return;
+    }
+
+    const purchaseList = [];
+    const allowedStatuses = ['planned', 'buying'];
+
+    state.plannerItems.forEach(item => {
+        if (!allowedStatuses.includes(item.status)) return;
+        if (item.buyCity !== selectedCity) return;
+
+        const qty = getPurchaseQuantity(item);
+        if (qty <= 0) return;
+
+        purchaseList.push({
+            uniqueId: item.uniqueId,
+            itemId: item.itemId,
+            itemName: item.itemName,
+            quality: item.quality,
+            quantity: qty,
+            maxQuantity: item.quantity,
+            buyMethod: item.buyMethod,
+            buyPrice: item.buyPriceRaw,
+            isCraftMaterial: item.isCraftMaterial || false,
+            forItemName: item.forItemName || null,
+            forItemQuality: item.forItemQuality || null,
+            enchantLevel: parseInt((item.itemId || '').split('@')[1], 10) || 0
+        });
+    });
+
+    if (purchaseList.length === 0) {
+        alert('Нет предметов для закупки в выбранном городе');
+        return;
+    }
+
+    ipcRenderer.send('start-purchase-bot', { city: selectedCity, items: purchaseList });
+}
 function initPlanner() {
     document.getElementById('planner-search')?.addEventListener('input', renderPlannerTable);
     document.getElementById('planner-sort-status')?.addEventListener('change', renderPlannerTable);
@@ -299,12 +560,35 @@ function initPlanner() {
     document.getElementById('planner-sell-city-filter')?.addEventListener('change', renderPlannerTable); 
     document.getElementById('openCraftSummaryBtn')?.addEventListener('click', openCraftSummary);
     document.getElementById('closeCraftSummaryBtn')?.addEventListener('click', closeCraftSummary);
+    document.getElementById('openPurchaseBtn')?.addEventListener('click', openPurchaseSummary);
+    document.getElementById('closePurchaseBtn')?.addEventListener('click', closePurchaseSummary);
+    document.getElementById('purchase-city-select')?.addEventListener('change', renderPurchaseSummary);
+    document.getElementById('startPurchaseBotBtn')?.addEventListener('click', startPurchaseBot);
+    
     // Закрытие кликом по фону
     document.getElementById('craftSummaryModal')?.addEventListener('click', (e) => {
         if (e.target.id === 'craftSummaryModal') closeCraftSummary();
     });
+    document.getElementById('purchaseModal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'purchaseModal') closePurchaseSummary();
+    });
+
+    ipcRenderer.on('purchase-bot-status', (e, s) => {
+        const el = document.getElementById('purchaseBotStatus');
+        if (el) el.textContent = s.text;
+    });
+
+    ipcRenderer.on('purchase-item-done', (e, data) => {
+        const item = state.plannerItems.find(i => i.uniqueId === data.uniqueId);
+        if (item) {
+            item.purchased = Math.min(item.quantity || 0, (item.purchased || 0) + data.quantity);
+            savePlannerItems();
+            renderPlannerTable();
+        }
+    });
     
     window.changePlannerStatus = changeStatus;
+    window.changePlannerPurchased = changePurchased;
     window.removePlannerItem = removeFromPlanner;
     renderPlannerTable();
 }

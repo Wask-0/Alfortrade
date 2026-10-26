@@ -363,6 +363,7 @@
             </div>
             <div class="filter-group filter-group-buttons">
                 <button class="export-btn" id="openCraftSummaryBtn">Ресурсы для зачарования</button>
+                <button class="export-btn" id="openPurchaseBtn" style="margin-left: 10px;">Закупить</button>
             </div>
           </div>
           <div class="table-wrapper my-orders-table-wrapper">
@@ -408,6 +409,50 @@
                   </thead>
                   <tbody id="craftSummaryBody"></tbody>
               </table>
+          </div>
+      </div>
+  </div>
+  <div class="modal-overlay" id="purchaseModal">
+      <div class="modal-window">
+          <div class="modal-header">
+              <span class="modal-title">Закупка предметов</span>
+              <button class="modal-close" id="closePurchaseBtn">✕</button>
+          </div>
+          <div class="modal-body">
+              <div class="filter-group" style="margin-bottom: 20px;">
+                  <label for="purchase-city-select">Город закупки:</label>
+                  <select id="purchase-city-select" style="margin-left: 10px; padding: 8px 12px; border-radius: 4px; background: #1a1a1a; color: #fff; border: 1px solid #333;">
+                      <option value="Brecilien">Brecilien</option>
+                      <option value="Caerleon">Caerleon</option>
+                      <option value="Bridgewatch">Bridgewatch</option>
+                      <option value="Lymhurst">Lymhurst</option>
+                      <option value="Fort Sterling">Fort Sterling</option>
+                      <option value="Thetford">Thetford</option>
+                      <option value="Martlock">Martlock</option>
+                  </select>
+              </div>
+              <table class="flipping-table" id="purchaseTable">
+                  <thead>
+                      <tr>
+                          <th>Предмет</th>
+                          <th>Качество</th>
+                          <th>Способ покупки</th>
+                          <th>Количество</th>
+                          <th>Цена за шт.</th>
+                          <th>Итого</th>
+                      </tr>
+                  </thead>
+                  <tbody id="purchaseBody"></tbody>
+              </table>
+              <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+                  <div style="font-size: 16px; font-weight: bold;">
+                      Общая сумма: <span id="purchaseTotalAmount" style="color: #4CAF50;">0</span>
+                  </div>
+                  <div id="purchaseBotStatus" style="color: #888; font-size: 13px; margin-bottom: 10px;"></div>
+                  <button class="export-btn" id="startPurchaseBotBtn" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                      Запустить бота закупки
+                  </button>
+              </div>
           </div>
       </div>
   </div>

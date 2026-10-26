@@ -483,3 +483,38 @@ ipcMain.handle('start-test-bot', async (event, botId) => {
     }
     return { ok: true };
 });
+
+// ===== БОТ ЗАКУПКИ =====
+const purchaseBot = require('./js/purchase-bot.js');
+
+ipcMain.on('start-purchase-bot', async (event, task) => {
+    const state = getBotState('purchase');   // F9/F10 подхватят автоматически
+    if (state.running) return;
+    state.running = true; state.paused = false; state.stopRequested = false;
+
+    const send = (text, running = true, paused = false) =>
+        event.sender.send('purchase-bot-status', { text, running, paused });
+
+    send('Старт через 3 сек...');
+    await showCountdown(3000);
+
+    const ctx = {
+        humanInput,
+        moveMouseTo,
+        sleep,
+        mouseSpeed: MOUSE_SPEED,
+        check: async () => {
+            while (state.paused && !state.stopRequested) await sleep(200);
+            if (state.stopRequested) throw new Error('stop');
+        },
+        status: send,
+        onItemDone: (item) => event.sender.send('purchase-item-done', { uniqueId: item.uniqueId, quantity: item.quantity })
+    };
+
+    try {
+        await purchaseBot.run(task, ctx);
+    } catch (e) {
+        send(state.stopRequested ? 'Остановлено (F10)' : `Ошибка: ${e.message}`, false);
+    }
+    state.running = false;
+});

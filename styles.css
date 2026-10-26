@@ -1950,3 +1950,50 @@ thead th.sticky-col-2::after {
 .bots-list-container::-webkit-scrollbar-thumb:active {
     background: var(--accent, #6c7bff);           /* при перетаскивании — акцентом */
 }
+
+/* Убираем стрелки у числовых инпутов количества */
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.qty-input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.purchased-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.qty-btn {
+    width: 24px;
+    height: 24px;
+    background: #333;
+    color: #fff;
+    border: 1px solid #555;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.qty-btn:hover:not(:disabled) { background: #444; }
+.qty-btn:disabled { opacity: 0.4; cursor: default; }
+
+.purchased-value {
+    min-width: 24px;
+    text-align: center;
+}
+
+.col-purchased .purchased-value {
+    color: #ffffff;
+}

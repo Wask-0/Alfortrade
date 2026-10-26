@@ -29211,13 +29211,15 @@
     "name": "Парные кинжалы 4.0",
     "tier": 4,
     "enchant": 0,
-    "enchantMatCount": 384
+    "enchantMatCount": 384,
+    "way": [21, 26, 46, 78, 98, 1, 14]
     },
     "T4_2H_DAGGERPAIR@1": {
     "name": "Парные кинжалы 4.1",
     "tier": 4,
     "enchant": 1,
-    "enchantMatCount": 384
+    "enchantMatCount": 384,
+    "way": [21, 26, 46, 78, 98, 1, 14]
     },
     "T4_2H_DAGGERPAIR@2": {
     "name": "Парные кинжалы 4.2",
