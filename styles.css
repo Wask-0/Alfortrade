@@ -335,11 +335,6 @@ tbody td {
   white-space: nowrap;
 }
 
-/* Фон для чётных строк */
-tbody tr:nth-child(even) td {
-  background-color: var(--bg-hover);
-}
-
 /* При наведении на строку цвет меняется синхронно для ВСЕХ ячеек */
 tbody tr:hover {
   cursor: pointer;
